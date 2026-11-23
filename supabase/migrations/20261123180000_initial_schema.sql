@@ -96,12 +96,7 @@ as $$
 $$;
 create or replace function private.is_household_creator(p_household_id uuid)
 returns boolean language sql stable security definer set search_path = ''
-as $
-  select exists (
-    select 1 from public.households h
-    where h.id = p_household_id and h.created_by = (select auth.uid())
-  );
-$;
+as 'select exists (select 1 from public.households h where h.id = p_household_id and h.created_by = auth.uid())';
 create or replace function private.is_household_owner(p_household_id uuid)
 returns boolean language sql stable security definer set search_path = ''
 as $$
