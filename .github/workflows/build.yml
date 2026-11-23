@@ -13,6 +13,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: https://shnztoudcnckuwvyskcz.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_122nJaKw25NoIcxHdO3F2w_sdfc9LvP
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
