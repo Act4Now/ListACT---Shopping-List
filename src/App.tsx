@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { Apple, Check, ChevronDown, CircleUserRound, House, ListChecks, Mic, Pencil, Plus, Settings, ShoppingBag, Wallet, X } from "lucide-react";
+import { Apple, Check, CircleUserRound, House, ListChecks, Mic, Pencil, Plus, Settings, ShoppingBag, Wallet, X } from "lucide-react";
 
 type Unit = "buc" | "kg" | "g" | "l" | "ml";
 type Item = { id: string; name: string; quantity: number; unit: Unit; price: number | null; bought: boolean };
