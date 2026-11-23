@@ -7,7 +7,13 @@ type Tab = "Acasă" | "Liste" | "Magazine" | "Buget" | "Profil";
 type Household = { id: string; name: string; city: string | null };
 type ShoppingList = { id: string; household_id: string; name: string; archived_at: string | null };
 type Item = { id: string; list_id: string; name: string; quantity: number; unit: Unit; unit_price: number | null; is_purchased: boolean; store_id: string | null };
-type Store = { id: string; name: string; household_id: string | null; is_system: boolean; is_active: boolean };\ntype Member = { user_id: string; role: "owner" | "member" };\ntype Invitation = { id: string; email: string; expires_at: string; accepted_at: string | null };\ntype SpeechResultLike = { 0: { transcript: string }; length: number };\ntype SpeechEventLike = { results: ArrayLike<SpeechResultLike> };\ntype SpeechRecognitionLike = { lang: string; interimResults: boolean; onresult: ((event: SpeechEventLike) => void) | null; onerror: (() => void) | null; onend: (() => void) | null; start: () => void; stop: () => void };\ntype SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+type Store = { id: string; name: string; household_id: string | null; is_system: boolean; is_active: boolean };
+type Member = { user_id: string; role: "owner" | "member" };
+type Invitation = { id: string; email: string; expires_at: string; accepted_at: string | null };
+type SpeechResultLike = { 0: { transcript: string }; length: number };
+type SpeechEventLike = { results: ArrayLike<SpeechResultLike> };
+type SpeechRecognitionLike = { lang: string; interimResults: boolean; onresult: ((event: SpeechEventLike) => void) | null; onerror: (() => void) | null; onend: (() => void) | null; start: () => void; stop: () => void };
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 const units: Unit[] = ["buc", "kg", "g", "l", "ml"];
 const money = (n: number) => new Intl.NumberFormat("ro-RO", { style: "currency", currency: "RON" }).format(n);
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -39,7 +45,15 @@ export default function App() {
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState({ quantity: "1", unit: "buc" as Unit, price: "" });
-  const [storeName, setStoreName] = useState("");\n  const [members, setMembers] = useState<Member[]>([]);\n  const [invitations, setInvitations] = useState<Invitation[]>([]);\n  const [inviteEmail, setInviteEmail] = useState("");\n  const [inviteUrl, setInviteUrl] = useState("");\n  const [addMode, setAddMode] = useState<"bulk" | "voice" | null>(null);\n  const [bulkText, setBulkText] = useState("");\n  const [listening, setListening] = useState(false);\n  const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null);
+  const [storeName, setStoreName] = useState("");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteUrl, setInviteUrl] = useState("");
+  const [addMode, setAddMode] = useState<"bulk" | "voice" | null>(null);
+  const [bulkText, setBulkText] = useState("");
+  const [listening, setListening] = useState(false);
+  const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null);
 
   const activeHousehold = households.find(h => h.id === householdId) ?? null;
   const activeList = lists.find(l => l.id === listId) ?? null;
@@ -79,7 +93,17 @@ export default function App() {
     setItems((data ?? []) as Item[]);
   }, [listId]);
 
-  const loadMembers = useCallback(async () => {\n    if (!supabase || !householdId) { setMembers([]); setInvitations([]); return; }\n    const [{ data: memberRows, error: memberError }, { data: inviteRows, error: inviteError }] = await Promise.all([\n      supabase.from("household_members").select("user_id,role").eq("household_id", householdId).order("joined_at"),\n      supabase.from("household_invitations").select("id,email,expires_at,accepted_at").eq("household_id", householdId).order("created_at", { ascending: false }),\n    ]);\n    if (memberError) setMessage(memberError.message); else setMembers((memberRows ?? []) as Member[]);\n    if (inviteError && !inviteError.message.includes("permission")) setMessage(inviteError.message); else setInvitations((inviteRows ?? []) as Invitation[]);\n  }, [householdId]);\n\n  const loadStores = useCallback(async () => {
+  const loadMembers = useCallback(async () => {
+    if (!supabase || !householdId) { setMembers([]); setInvitations([]); return; }
+    const [{ data: memberRows, error: memberError }, { data: inviteRows, error: inviteError }] = await Promise.all([
+      supabase.from("household_members").select("user_id,role").eq("household_id", householdId).order("joined_at"),
+      supabase.from("household_invitations").select("id,email,expires_at,accepted_at").eq("household_id", householdId).order("created_at", { ascending: false }),
+    ]);
+    if (memberError) setMessage(memberError.message); else setMembers((memberRows ?? []) as Member[]);
+    if (inviteError && !inviteError.message.includes("permission")) setMessage(inviteError.message); else setInvitations((inviteRows ?? []) as Invitation[]);
+  }, [householdId]);
+
+  const loadStores = useCallback(async () => {
     if (!supabase || !householdId) { setStores([]); return; }
     const { data, error } = await supabase.from("stores").select("id,name,household_id,is_system,is_active").eq("is_active", true).or(`is_system.eq.true,household_id.eq.${householdId}`).order("name");
     if (error) { setMessage(error.message); return; }
@@ -101,7 +125,32 @@ export default function App() {
     return () => { void supabase?.removeChannel(channel); };
   }, [listId, loadItems]);
 
-  useEffect(() => {\n    if (!supabase || !session) return;\n    const token = new URLSearchParams(window.location.search).get("invite");\n    if (!token) return;\n    supabase.rpc("accept_household_invitation", { p_token: token }).then(async ({ error }) => {\n      window.history.replaceState({}, "", window.location.pathname);\n      if (error) setMessage(error.message);\n      else { setMessage("Ai intrat în gospodărie."); await loadHouseholds(); }\n    });\n  }, [session, loadHouseholds]);\n\n  async function createInvitation() {\n    if (!supabase || !session || !householdId || !inviteEmail.trim()) return;\n    const bytes = crypto.getRandomValues(new Uint8Array(32));\n    const token = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");\n    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));\n    const tokenHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");\n    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();\n    const { error } = await supabase.from("household_invitations").insert({ household_id: householdId, email: inviteEmail.trim().toLowerCase(), token_hash: tokenHash, invited_by: session.user.id, expires_at: expiresAt });\n    if (error) { setMessage(error.message); return; }\n    const url = new URL(window.location.href); url.searchParams.set("invite", token);\n    setInviteUrl(url.toString()); setInviteEmail(""); await loadMembers();\n  }\n  async function copyInvite() { if (inviteUrl) { await navigator.clipboard.writeText(inviteUrl); setMessage("Linkul invitației a fost copiat."); } }\n\n  async function signIn(provider: "google" | "apple") {
+  useEffect(() => {
+    if (!supabase || !session) return;
+    const token = new URLSearchParams(window.location.search).get("invite");
+    if (!token) return;
+    supabase.rpc("accept_household_invitation", { p_token: token }).then(async ({ error }) => {
+      window.history.replaceState({}, "", window.location.pathname);
+      if (error) setMessage(error.message);
+      else { setMessage("Ai intrat în gospodărie."); await loadHouseholds(); }
+    });
+  }, [session, loadHouseholds]);
+
+  async function createInvitation() {
+    if (!supabase || !session || !householdId || !inviteEmail.trim()) return;
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    const token = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+    const tokenHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase.from("household_invitations").insert({ household_id: householdId, email: inviteEmail.trim().toLowerCase(), token_hash: tokenHash, invited_by: session.user.id, expires_at: expiresAt });
+    if (error) { setMessage(error.message); return; }
+    const url = new URL(window.location.href); url.searchParams.set("invite", token);
+    setInviteUrl(url.toString()); setInviteEmail(""); await loadMembers();
+  }
+  async function copyInvite() { if (inviteUrl) { await navigator.clipboard.writeText(inviteUrl); setMessage("Linkul invitației a fost copiat."); } }
+
+  async function signIn(provider: "google" | "apple") {
     if (!supabase) return setMessage("Lipsește configurarea VITE_SUPABASE_URL sau VITE_SUPABASE_PUBLISHABLE_KEY.");
     const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin } });
     if (error) setMessage(error.message);
@@ -176,7 +225,31 @@ export default function App() {
     const { error } = await supabase.from("stores").insert({ household_id: householdId, name: storeName.trim(), is_system: false, created_by: session.user.id });
     if (error) setMessage(error.message); else { setStoreName(""); await loadStores(); }
   }
-  const bulkNames = bulkText.split(/[\\n,;]+/).map(n => n.trim()).filter(Boolean);\n  const normalizedExisting = new Set(items.map(i => i.name.trim().toLocaleLowerCase("ro")));\n  const bulkDuplicates = bulkNames.filter((n, i) => normalizedExisting.has(n.toLocaleLowerCase("ro")) || bulkNames.slice(0, i).some(p => p.toLocaleLowerCase("ro") === n.toLocaleLowerCase("ro")));\n  function startVoice() {\n    const browser = window as Window & { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };\n    const Ctor = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;\n    if (!Ctor) { setMessage("Dictarea vocală nu este disponibilă în acest browser. Poți introduce produsele manual în aceeași zonă."); return; }\n    const instance = new Ctor(); instance.lang = "ro-RO"; instance.interimResults = false;\n    instance.onresult = event => { const transcript = Array.from(event.results).map(r => r[0].transcript).join(" "); setBulkText(current => current ? current + "\\n" + transcript : transcript); };\n    instance.onerror = () => { setListening(false); setMessage("Nu am putut recunoaște vocea. Verifică permisiunea microfonului și încearcă din nou."); };\n    instance.onend = () => setListening(false);\n    setRecognition(instance); setListening(true);\n    try { instance.start(); } catch { setListening(false); setMessage("Dictarea nu a putut porni. Încearcă din nou."); }\n  }\n  async function submitBulk() {\n    if (!supabase || !listId || bulkNames.length === 0) return;\n    setBusy(true);\n    const payload = bulkNames.map(name => ({ name, quantity: 1, unit: "buc" }));\n    const { error } = await supabase.rpc("add_shopping_items_bulk", { p_list_id: listId, p_items: payload });\n    setBusy(false);\n    if (error) { setMessage(error.message); return; }\n    setMessage(bulkDuplicates.length ? "Produsele au fost adăugate. Duplicatele au fost reunite conform regulilor listei." : "Produsele au fost adăugate.");\n    setBulkText(""); setAddMode(null); await loadItems();\n  }\n  async function archiveList() {
+  const bulkNames = bulkText.split(/[\n,;]+/).map(n => n.trim()).filter(Boolean);
+  const normalizedExisting = new Set(items.map(i => i.name.trim().toLocaleLowerCase("ro")));
+  const bulkDuplicates = bulkNames.filter((n, i) => normalizedExisting.has(n.toLocaleLowerCase("ro")) || bulkNames.slice(0, i).some(p => p.toLocaleLowerCase("ro") === n.toLocaleLowerCase("ro")));
+  function startVoice() {
+    const browser = window as Window & { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };
+    const Ctor = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
+    if (!Ctor) { setMessage("Dictarea vocală nu este disponibilă în acest browser. Poți introduce produsele manual în aceeași zonă."); return; }
+    const instance = new Ctor(); instance.lang = "ro-RO"; instance.interimResults = false;
+    instance.onresult = event => { const transcript = Array.from(event.results).map(r => r[0].transcript).join(" "); setBulkText(current => current ? current + "\n" + transcript : transcript); };
+    instance.onerror = () => { setListening(false); setMessage("Nu am putut recunoaște vocea. Verifică permisiunea microfonului și încearcă din nou."); };
+    instance.onend = () => setListening(false);
+    setRecognition(instance); setListening(true);
+    try { instance.start(); } catch { setListening(false); setMessage("Dictarea nu a putut porni. Încearcă din nou."); }
+  }
+  async function submitBulk() {
+    if (!supabase || !listId || bulkNames.length === 0) return;
+    setBusy(true);
+    const payload = bulkNames.map(name => ({ name, quantity: 1, unit: "buc" }));
+    const { error } = await supabase.rpc("add_shopping_items_bulk", { p_list_id: listId, p_items: payload });
+    setBusy(false);
+    if (error) { setMessage(error.message); return; }
+    setMessage(bulkDuplicates.length ? "Produsele au fost adăugate. Duplicatele au fost reunite conform regulilor listei." : "Produsele au fost adăugate.");
+    setBulkText(""); setAddMode(null); await loadItems();
+  }
+  async function archiveList() {
     if (!supabase || !activeList || !window.confirm("Arhivezi lista? Produsele vor rămâne păstrate.")) return;
     const { error } = await supabase.from("shopping_lists").update({ archived_at: new Date().toISOString() }).eq("id", activeList.id);
     if (error) setMessage(error.message); else { setListId(""); await loadLists(); }
@@ -200,7 +273,7 @@ export default function App() {
       <div className="quick-actions"><button onClick={() => { setAddMode(addMode === "bulk" ? null : "bulk"); setShowAdd(false); }}><Plus size={17}/> Adăugare în masă</button><button onClick={() => { setAddMode(addMode === "voice" ? null : "voice"); setShowAdd(false); }}><Mic size={17}/> Adăugare vocală</button></div>
       {addMode && <section className="bulk-panel"><div className="list-heading"><div><h2>{addMode === "voice" ? "Adăugare vocală" : "Adăugare în masă"}</h2><p>{addMode === "voice" ? "Vorbește în română sau editează transcrierea." : "Un produs pe rând sau separate prin virgulă."}</p></div><button className="icon-button" onClick={() => { recognition?.stop(); setListening(false); setAddMode(null); }} aria-label="Închide"><X size={17}/></button></div>
       {addMode === "voice" && <button className="primary-button voice-button" onClick={() => listening ? recognition?.stop() : startVoice()}><Mic size={17}/>{listening ? "Oprește dictarea" : "Începe dictarea"}</button>}
-      <textarea rows={4} placeholder={"Lapte\\nPâine\\nBanane"} value={bulkText} onChange={e => setBulkText(e.target.value)}/>
+      <textarea rows={4} placeholder={"Lapte, Pâine, Banane"} value={bulkText} onChange={e => setBulkText(e.target.value)}/>
       <div className="bulk-meta"><span>{bulkNames.length} produse detectate</span>{bulkDuplicates.length > 0 && <strong>{bulkDuplicates.length} posibile duplicate — verifică înainte de adăugare</strong>}</div>
       {bulkNames.length > 0 && <ul className="bulk-preview">{bulkNames.map((name,i) => <li key={i}>{name}{bulkDuplicates.some(d => d.toLocaleLowerCase("ro") === name.toLocaleLowerCase("ro")) && <small> posibil duplicat</small>}</li>)}</ul>}
       <div className="bulk-actions"><button className="primary-button" disabled={busy || bulkNames.length === 0} onClick={() => void submitBulk()}>{busy ? "Se adaugă…" : "Confirmă și adaugă"}</button><button className="cancel-button" onClick={() => { recognition?.stop(); setListening(false); setAddMode(null); }}>Anulează</button></div></section>}
