@@ -35,6 +35,7 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [recoveryMode, setRecoveryMode] = useState(false);
   const [householdName, setHouseholdName] = useState("");
   const [householdCity, setHouseholdCity] = useState("");
   const [householdCityDraft, setHouseholdCityDraft] = useState("");
@@ -126,7 +127,10 @@ export default function App() {
   useEffect(() => {
     if (!supabase) { setAuthReady(true); return; }
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
+      setSession(next);
+      if (event === "PASSWORD_RECOVERY") setRecoveryMode(true);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
   useEffect(() => { if (session) { void loadHouseholds(); void loadProfile(); } else { setHouseholds([]); setLists([]); setItems([]); setStores([]); } }, [session, loadHouseholds, loadProfile]);
@@ -205,12 +209,25 @@ export default function App() {
   async function emailAuth() {
     if (!supabase) return setMessage("Conexiunea Supabase nu este configurată.");
     setBusy(true); setMessage("");
-    const result = authMode === "signup"
-      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } })
-      : await supabase.auth.signInWithPassword({ email, password });
+    const result = recoveryMode
+      ? await supabase.auth.updateUser({ password })
+      : authMode === "signup"
+        ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } })
+        : await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (result.error) setMessage(result.error.message);
+    else if (recoveryMode) { setRecoveryMode(false); setPassword(""); setMessage("Parola a fost schimbată. Te poți autentifica folosind parola nouă."); }
     else if (authMode === "signup" && !result.data.session) setMessage("Cont creat. Verifică e-mailul pentru confirmarea adresei.");
+  }
+  async function sendPasswordReset() {
+    if (!supabase || !email.trim()) return setMessage("Introdu adresa de e-mail pentru recuperarea parolei.");
+    setBusy(true); setMessage("");
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    setBusy(false);
+    if (error) setMessage(error.message);
+    else setMessage("Dacă există un cont pentru această adresă, vei primi un e-mail cu pașii de resetare.");
   }
   async function signOut() { if (supabase) await supabase.auth.signOut(); }
   async function createHousehold() {
@@ -361,7 +378,7 @@ export default function App() {
     { label: "Magazine" as Tab, icon: ShoppingBag }, { label: "Buget" as Tab, icon: Wallet }, { label: "Profil" as Tab, icon: CircleUserRound },
   ];
   if (!authReady) return <div className="center-screen"><div className="brand-mark">L</div><p>Se încarcă ListACT…</p></div>;
-  if (!session) return <div className="auth-shell"><div className="auth-card"><a className="brand" href="#"><span className="brand-mark">L</span><span>List<span className="brand-accent">ACT</span></span></a><p className="eyebrow">CUMPĂRĂTURI ÎMPREUNĂ</p><h1>{authMode === "login" ? "Bine ai revenit!" : "Creează-ți contul"}</h1><p className="subtle">Liste simple, buget clar, toată familia conectată.</p><label>E-mail<input type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="adresa@exemplu.ro"/></label><label>Parolă<input type="password" autoComplete={authMode === "login" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Cel puțin 8 caractere"/></label><button className="primary-button full" disabled={busy || !email || password.length < 8} onClick={() => void emailAuth()}>{busy ? "Se procesează…" : authMode === "login" ? "Autentificare" : "Creează cont"}</button><div className="auth-divider"><span>sau</span></div><button className="oauth-button" onClick={() => void signIn("google")}>Continuă cu Google</button><button className="oauth-button" onClick={() => void signIn("apple")}><Apple size={17}/> Continuă cu Apple</button><p className="auth-switch">{authMode === "login" ? "Nu ai cont?" : "Ai deja cont?"} <button onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>{authMode === "login" ? "Înregistrează-te" : "Autentifică-te"}</button></p>{message && <p className="notice">{message}</p>} {!supabase && <p className="notice">Configurarea publică Supabase lipsește din mediul de rulare.</p>}</div></div>;
+  if (!session) return <div className="auth-shell"><div className="auth-card"><a className="brand" href="#"><span className="brand-mark">L</span><span>List<span className="brand-accent">ACT</span></span></a><p className="eyebrow">CUMPĂRĂTURI ÎMPREUNĂ</p><h1>{recoveryMode ? "Alege o parolă nouă" : authMode === "login" ? "Bine ai revenit!" : "Creează-ți contul"}</h1><p className="subtle">Liste simple, buget clar, toată familia conectată.</p>{!recoveryMode && <label>E-mail<input type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="adresa@exemplu.ro"/></label>}<label>{recoveryMode ? "Parolă nouă" : "Parolă"}<input type="password" autoComplete={recoveryMode || authMode === "signup" ? "new-password" : "current-password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Cel puțin 8 caractere"/></label><button className="primary-button full" disabled={busy || password.length < 8 || (!recoveryMode && !email)} onClick={() => void emailAuth()}>{busy ? "Se procesează…" : recoveryMode ? "Salvează parola nouă" : authMode === "login" ? "Autentificare" : "Creează cont"}</button>{!recoveryMode && authMode === "login" && <button className="text-button" disabled={busy || !email.trim()} onClick={() => void sendPasswordReset()}>Am uitat parola</button>}{!recoveryMode && <div className="auth-divider"><span>sau</span></div>}{!recoveryMode && <><button className="oauth-button" onClick={() => void signIn("google")}>Continuă cu Google</button><button className="oauth-button" onClick={() => void signIn("apple")}><Apple size={17}/> Continuă cu Apple</button><p className="auth-switch">{authMode === "login" ? "Nu ai cont?" : "Ai deja cont?"} <button onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>{authMode === "login" ? "Înregistrează-te" : "Autentifică-te"}</button></p></>}{message && <p className="notice">{message}</p>} {!supabase && <p className="notice">Configurarea publică Supabase lipsește din mediul de rulare.</p>}</div></div>;
 
   return <div className="app-shell" style={{ fontSize: profile.font_size }}>
     <header className="topbar"><a className="brand" href="#"><span className="brand-mark">L</span><span>List<span className="brand-accent">ACT</span></span></a><div className="top-actions">{households.length > 0 && <select aria-label="Gospodărie activă" className="household-select" value={householdId} onChange={e => setHouseholdId(e.target.value)}>{households.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}</select>}<button className="avatar" onClick={() => setTab("Profil")} aria-label="Profil"><CircleUserRound size={21}/></button></div></header>
