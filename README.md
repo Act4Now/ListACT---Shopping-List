@@ -4,6 +4,8 @@ Aplicație de liste de cumpărături pentru gospodării și familii.
 
 ## Stadiul dezvoltării
 
+Vezi [raportul detaliat de implementare și verificare](docs/DEVELOPMENT_STATUS.md) pentru funcțiile existente, starea securității, migrațiile și testele încă necesare.
+
 - Ramura de dezvoltare: `develop`
 - Ramura `main` este rezervată lansării unice de producție.
 - Aplicația nu este încă publicată.
