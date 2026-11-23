@@ -28,6 +28,11 @@ Ultima verificare: 23 noiembrie 2026.
 - Advisor-ul Supabase pentru securitate și health nu a raportat lint-uri la ultima verificare.
 - Este impus un singur proprietar per gospodărie prin index unic parțial; transferul blochează rândul gospodăriei și schimbă rolurile tranzacțional.
 
+## Corecție pentru prețurile personale
+- Suprascrierile de preț sunt acum separate prin cheia compusă `(shopping_item_id, updated_by)`; fiecare membru citește, modifică și șterge numai propriul preț, prin RLS.
+- Interfața filtrează explicit prețurile după utilizator și folosește cheia compusă la upsert.
+- Modificarea a fost aplicată în Supabase și salvată în migrațiile din `develop`; testul end-to-end cu două conturi rămâne necesar.
+
 ## Sincronizarea migrațiilor — lucru rămas
 Migrațiile recente pentru linkuri și administrarea gospodăriilor sunt salvate în `supabase/migrations` și au fost aplicate în Supabase.
 
