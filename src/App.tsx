@@ -147,12 +147,10 @@ export default function App() {
     const requestKey = session.user.id + ":" + householdParam + ":" + householdToken;
     if (processedJoinLinks.current.has(requestKey)) return;
     processedJoinLinks.current.add(requestKey);
-    let cancelled = false;
     supabase.rpc("accept_household_join_link", {
       p_household_id: householdParam,
       p_token: householdToken
     }).then(async ({ error }) => {
-      if (cancelled) return;
       params.delete("join");
       params.delete("household");
       const cleanUrl = window.location.pathname + (params.size ? "?" + params.toString() : "") + window.location.hash;
@@ -166,7 +164,6 @@ export default function App() {
         setHouseholdId(householdParam);
       }
     });
-    return () => { cancelled = true; };
   }, [session, loadHouseholds]);
 
   async function generateHouseholdLink() {
