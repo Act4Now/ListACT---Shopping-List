@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
-import { Apple, Check, CircleUserRound, House, ListChecks, LogOut, Pencil, Plus, Settings, ShoppingBag, Wallet, X, Mic, Trash2 } from "lucide-react";
+import { Apple, Check, CircleUserRound, House, ListChecks, LogOut, Pencil, Plus, ShoppingBag, Wallet, X, Trash2 } from "lucide-react";
 
 type Unit = "buc" | "kg" | "g" | "l" | "ml";
 type Tab = "Acasă" | "Liste" | "Magazine" | "Buget" | "Profil";
