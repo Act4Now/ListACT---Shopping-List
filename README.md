@@ -9,7 +9,8 @@ Vezi [raportul detaliat de implementare și verificare](docs/DEVELOPMENT_STATUS.
 - Ramura de dezvoltare: `develop`
 - Ramura `main` este rezervată lansării unice de producție.
 - Aplicația nu este încă publicată.
-- Migrațiile Supabase se păstrează în `supabase/migrations`.
+- Toate cele 20 de migrări Supabase înregistrate în proiect sunt reprezentate în `supabase/migrations`.
+- Pregătirea publicării: [ghidul de deploy](docs/PRODUCTION_DEPLOYMENT.md).
 
 ## Tehnologii
 
@@ -29,7 +30,7 @@ npm install
 npm run dev
 ```
 
-Build de verificare:
+Build de verificare (Node.js 22):
 
 ```bash
 npm run build
