@@ -17,7 +17,7 @@ Ultima verificare: 23 noiembrie 2026.
 - Liste multiple, arhivare, produse individuale și în masă, dictare vocală dependentă de browser.
 - Sincronizare Realtime pentru produsele listei.
 - Magazine globale și magazine personalizate, cu redenumire/dezactivare.
-- Cantități, unități, prețuri și suprascrieri personale; buget calculat din prețurile disponibile.
+- Cantități, unități și preț unitar comun salvat pe produs; orice membru al gospodăriei poate modifica prețul, iar Realtime propagă schimbarea către toți membrii conectați la lista respectivă. Bugetul este calculat din același preț comun.
 
 ## Securitate verificată
 - RLS este activ pe toate cele 16 tabele publice.
@@ -32,6 +32,12 @@ Ultima verificare: 23 noiembrie 2026.
 - Suprascrierile de preț sunt acum separate prin cheia compusă `(shopping_item_id, updated_by)`; fiecare membru citește, modifică și șterge numai propriul preț, prin RLS.
 - Interfața filtrează explicit prețurile după utilizator și folosește cheia compusă la upsert.
 - Modificarea a fost aplicată în Supabase și salvată în migrațiile din `develop`; testul end-to-end cu două conturi rămâne necesar.
+
+## Sincronizarea prețurilor între membrii gospodăriei
+- Prețul comun este `shopping_items.unit_price`; interfața nu mai citește și nu mai scrie suprascrieri individuale din `list_item_price_overrides`.
+- Modificarea prețului actualizează rândul produsului, iar abonarea Realtime la `shopping_items` reîncarcă lista pentru toți membrii conectați.
+- La verificarea din 23 noiembrie 2026, tabela `list_item_price_overrides` nu conținea rânduri; nu a fost necesară reconcilierea unor prețuri personale istorice.
+- Tabela veche rămâne în baza de date pentru moment, dar nu mai este folosită de interfață.
 
 ## Sincronizarea migrațiilor — lucru rămas
 Migrațiile recente pentru linkuri și administrarea gospodăriilor sunt salvate în `supabase/migrations` și au fost aplicate în Supabase.
