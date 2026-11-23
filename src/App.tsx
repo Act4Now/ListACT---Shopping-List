@@ -209,14 +209,18 @@ export default function App() {
   async function emailAuth() {
     if (!supabase) return setMessage("Conexiunea Supabase nu este configurată.");
     setBusy(true); setMessage("");
-    const result = recoveryMode
-      ? await supabase.auth.updateUser({ password })
-      : authMode === "signup"
-        ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } })
-        : await supabase.auth.signInWithPassword({ email, password });
+    if (recoveryMode) {
+      const { error } = await supabase.auth.updateUser({ password });
+      setBusy(false);
+      if (error) setMessage(error.message);
+      else { setRecoveryMode(false); setPassword(""); setMessage("Parola a fost schimbată. Te poți autentifica folosind parola nouă."); }
+      return;
+    }
+    const result = authMode === "signup"
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } })
+      : await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (result.error) setMessage(result.error.message);
-    else if (recoveryMode) { setRecoveryMode(false); setPassword(""); setMessage("Parola a fost schimbată. Te poți autentifica folosind parola nouă."); }
     else if (authMode === "signup" && !result.data.session) setMessage("Cont creat. Verifică e-mailul pentru confirmarea adresei.");
   }
   async function sendPasswordReset() {
