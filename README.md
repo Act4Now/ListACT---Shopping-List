@@ -53,7 +53,7 @@ Pentru autentificarea OAuth trebuie configurate separat Google și Apple în Sup
 - produse, cantități, unități și stare cumpărat/ne-cumpărat;
 - adăugare individuală și în masă, cu confirmare;
 - dictare vocală română prin Web Speech API atunci când browserul o suportă;
-- preț personal pe linia produsului, păstrat separat de viitoarele estimări online;
+- preț unitar comun pe produs, sincronizat între membrii gospodăriei prin Supabase Realtime;
 - magazine globale și magazine proprii gospodăriei;
 - atribuirea magazinelor în masă;
 - sincronizare Realtime pentru produsele listelor.
