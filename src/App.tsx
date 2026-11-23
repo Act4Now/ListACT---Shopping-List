@@ -232,7 +232,7 @@ export default function App() {
     const { error } = await supabase.from("stores").insert({ household_id: householdId, name: storeName.trim(), is_system: false, created_by: session.user.id });
     if (error) setMessage(error.message); else { setStoreName(""); await loadStores(); }
   }
-  const bulkNames = bulkText.replace(/^\\s*(?:am nevoie de|aș vrea|as vrea|adaugă|adauga|cumpără|cumpara)\\s+/i, "").split(/[\\n,;]+|\\s+(?:și|si)\\s+/i).map(n => n.trim().replace(/^(?:și|si)\\s+/i, "")).filter(Boolean);
+  const bulkNames = bulkText.replace(/^\s*(?:am nevoie de|aș vrea|as vrea|adaugă|adauga|cumpără|cumpara)\s+/i, "").split(/[\n,;]+|\s+(?:și|si)\s+/i).map(n => n.trim().replace(/^(?:și|si)\s+/i, "")).filter(Boolean);
   const normalizedExisting = new Set(items.map(i => i.name.trim().toLocaleLowerCase("ro")));
   const bulkDuplicates = bulkNames.filter((n, i) => normalizedExisting.has(n.toLocaleLowerCase("ro")) || bulkNames.slice(0, i).some(p => p.toLocaleLowerCase("ro") === n.toLocaleLowerCase("ro")));
   function startVoice() {
@@ -256,7 +256,14 @@ export default function App() {
     setMessage(bulkDuplicates.length ? "Produsele au fost adăugate. Duplicatele au fost reunite conform regulilor listei." : "Produsele au fost adăugate.");
     setBulkText(""); setAddMode(null); await loadItems();
   }
-  async function renameList() {\n    if (!supabase || !activeList) return;\n    const nextName = window.prompt("Noul nume al listei", activeList.name)?.trim();\n    if (!nextName || nextName === activeList.name) return;\n    const { error } = await supabase.from("shopping_lists").update({ name: nextName, updated_at: new Date().toISOString() }).eq("id", activeList.id);\n    if (error) setMessage(error.message); else await loadLists();\n  }\n  async function archiveList() {
+  async function renameList() {
+    if (!supabase || !activeList) return;
+    const nextName = window.prompt("Noul nume al listei", activeList.name)?.trim();
+    if (!nextName || nextName === activeList.name) return;
+    const { error } = await supabase.from("shopping_lists").update({ name: nextName, updated_at: new Date().toISOString() }).eq("id", activeList.id);
+    if (error) setMessage(error.message); else await loadLists();
+  }
+  async function archiveList() {
     if (!supabase || !activeList || !window.confirm("Arhivezi lista? Produsele vor rămâne păstrate.")) return;
     const { error } = await supabase.from("shopping_lists").update({ archived_at: new Date().toISOString() }).eq("id", activeList.id);
     if (error) setMessage(error.message); else { setListId(""); await loadLists(); }
