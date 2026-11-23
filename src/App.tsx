@@ -37,7 +37,8 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [householdName, setHouseholdName] = useState("");
-  const [householdCity, setHouseholdCity] = useState("");\n  const [householdCityDraft, setHouseholdCityDraft] = useState("");
+  const [householdCity, setHouseholdCity] = useState("");
+  const [householdCityDraft, setHouseholdCityDraft] = useState("");
   const [listName, setListName] = useState("");
   const [newName, setNewName] = useState("");
   const [newQty, setNewQty] = useState("1");
@@ -58,7 +59,8 @@ export default function App() {
   const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null);
 
   const activeHousehold = households.find(h => h.id === householdId) ?? null;
-  const activeList = lists.find(l => l.id === listId) ?? null;\n  const isHouseholdOwner = members.some(m => m.user_id === session?.user.id && m.role === "owner");
+  const activeList = lists.find(l => l.id === listId) ?? null;
+  const isHouseholdOwner = members.some(m => m.user_id === session?.user.id && m.role === "owner");
   const total = useMemo(() => items.filter(i => !i.is_purchased && (i.personal_unit_price ?? i.unit_price) !== null).reduce((sum, i) => sum + Number(i.quantity) * Number(i.personal_unit_price ?? i.unit_price), 0), [items]);
   const unpriced = items.filter(i => !i.is_purchased && i.unit_price === null).length;
   const remaining = items.filter(i => !i.is_purchased).length;
@@ -133,7 +135,8 @@ export default function App() {
   }, []);
   useEffect(() => { if (session) { void loadHouseholds(); void loadProfile(); } else { setHouseholds([]); setLists([]); setItems([]); setStores([]); } }, [session, loadHouseholds, loadProfile]);
   useEffect(() => { void loadLists(); void loadStores(); void loadMembers(); }, [householdId, loadLists, loadStores, loadMembers]);
-  useEffect(() => { void loadItems(); }, [listId, loadItems]);\n  useEffect(() => { setHouseholdCityDraft(activeHousehold?.city ?? ""); }, [householdId]);
+  useEffect(() => { void loadItems(); }, [listId, loadItems]);
+  useEffect(() => { setHouseholdCityDraft(activeHousehold?.city ?? ""); }, [householdId]);
   useEffect(() => {
     if (!supabase || !listId) return;
     const channel = supabase.channel(`list-${listId}`).on("postgres_changes", { event: "*", schema: "public", table: "shopping_items", filter: `list_id=eq.${listId}` }, () => { void loadItems(); }).subscribe();
@@ -243,7 +246,12 @@ export default function App() {
     const { error } = await supabase.from("shopping_items").delete().eq("id", id);
     if (error) setMessage(error.message); else await loadItems();
   }
-  async function saveHouseholdCity() {\n    if (!supabase || !householdId) return;\n    const { error } = await supabase.from("households").update({ city: householdCityDraft.trim() || null, updated_at: new Date().toISOString() }).eq("id", householdId);\n    if (error) setMessage(error.message); else { setMessage("Orașul gospodăriei a fost salvat."); await loadHouseholds(); }\n  }\n  async function saveProfile() {
+  async function saveHouseholdCity() {
+    if (!supabase || !householdId) return;
+    const { error } = await supabase.from("households").update({ city: householdCityDraft.trim() || null, updated_at: new Date().toISOString() }).eq("id", householdId);
+    if (error) setMessage(error.message); else { setMessage("Orașul gospodăriei a fost salvat."); await loadHouseholds(); }
+  }
+  async function saveProfile() {
     if (!supabase || !session) return;
     const { error } = await supabase.from("profiles").upsert({ id: session.user.id, display_name: profile.display_name.trim() || null, city: profile.city.trim() || null, font_size: profile.font_size, updated_at: new Date().toISOString() });
     if (error) setMessage(error.message); else { setHouseholdCity(profile.city.trim()); setMessage("Profil salvat."); }
