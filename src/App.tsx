@@ -60,7 +60,7 @@ export default function App() {
   const activeList = lists.find(l => l.id === listId) ?? null;
   const isHouseholdOwner = members.some(m => m.user_id === session?.user.id && m.role === "owner");
   const total = useMemo(() => items.filter(i => !i.is_purchased && (i.personal_unit_price ?? i.unit_price) !== null).reduce((sum, i) => sum + Number(i.quantity) * Number(i.personal_unit_price ?? i.unit_price), 0), [items]);
-  const unpriced = items.filter(i => !i.is_purchased && i.unit_price === null).length;
+  const unpriced = items.filter(i => !i.is_purchased && (i.personal_unit_price ?? i.unit_price) === null).length;
   const remaining = items.filter(i => !i.is_purchased).length;
 
   const loadHouseholds = useCallback(async () => {
