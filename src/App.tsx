@@ -9,7 +9,6 @@ type ShoppingList = { id: string; household_id: string; name: string; archived_a
 type Item = { id: string; list_id: string; name: string; quantity: number; unit: Unit; unit_price: number | null; personal_unit_price?: number | null; is_purchased: boolean; store_id: string | null };
 type Store = { id: string; name: string; household_id: string | null; is_system: boolean; is_active: boolean };
 type Member = { user_id: string; role: "owner" | "member"; display_name?: string | null };
-type Invitation = { id: string; email: string; expires_at: string; accepted_at: string | null };
 type SpeechResultLike = { 0: { transcript: string }; length: number };
 type SpeechEventLike = { results: ArrayLike<SpeechResultLike> };
 type SpeechRecognitionLike = { lang: string; interimResults: boolean; onresult: ((event: SpeechEventLike) => void) | null; onerror: (() => void) | null; onend: (() => void) | null; start: () => void; stop: () => void };
@@ -187,7 +186,7 @@ export default function App() {
     if (!supabase) return setMessage("Conexiunea Supabase nu este configurată.");
     setBusy(true); setMessage("");
     const result = authMode === "signup"
-      ? await supabase.auth.signUp({ email, password })
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } })
       : await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (result.error) setMessage(result.error.message);
