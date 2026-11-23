@@ -169,7 +169,7 @@ export type Database = {
           {
             foreignKeyName: "list_item_price_overrides_shopping_item_id_fkey"
             columns: ["shopping_item_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "shopping_items"
             referencedColumns: ["id"]
           },
