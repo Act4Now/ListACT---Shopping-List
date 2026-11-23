@@ -28,10 +28,10 @@ Ultima verificare: 23 noiembrie 2026.
 - Advisor-ul Supabase pentru securitate și health nu a raportat lint-uri la ultima verificare.
 - Este impus un singur proprietar per gospodărie prin index unic parțial; transferul blochează rândul gospodăriei și schimbă rolurile tranzacțional.
 
-## Corecție pentru prețurile personale
-- Suprascrierile de preț sunt acum separate prin cheia compusă `(shopping_item_id, updated_by)`; fiecare membru citește, modifică și șterge numai propriul preț, prin RLS.
-- Interfața filtrează explicit prețurile după utilizator și folosește cheia compusă la upsert.
-- Modificarea a fost aplicată în Supabase și salvată în migrațiile din `develop`; testul end-to-end cu două conturi rămâne necesar.
+## Istoricul prețurilor personale (migrare istorică)
+- Migrarea `20261123185156_personal_price_overrides_per_user` a fost aplicată în Supabase și este păstrată în repository pentru reproducerea fidelă a istoricului.
+- Această tabelă este o componentă istorică nefolosită de interfața actuală. Prețul utilizat de ListACT rămâne `shopping_items.unit_price`, comun gospodăriei.
+- Tabela `list_item_price_overrides` este goală la ultima verificare și rămâne deocamdată în schema bazei de date; nu este citită sau modificată de aplicația curentă.
 
 ## Sincronizarea prețurilor între membrii gospodăriei
 - Prețul comun este `shopping_items.unit_price`; interfața nu mai citește și nu mai scrie suprascrieri individuale din `list_item_price_overrides`.
@@ -39,10 +39,12 @@ Ultima verificare: 23 noiembrie 2026.
 - La verificarea din 23 noiembrie 2026, tabela `list_item_price_overrides` nu conținea rânduri; nu a fost necesară reconcilierea unor prețuri personale istorice.
 - Tabela veche rămâne în baza de date pentru moment, dar nu mai este folosită de interfață.
 
-## Sincronizarea migrațiilor — lucru rămas
-Migrațiile recente pentru linkuri și administrarea gospodăriilor sunt salvate în `supabase/migrations` și au fost aplicate în Supabase.
-
-**Atenție:** primele 10 migrații istorice (schema inițială, RPC-uri, Realtime, magazine și schema de prețuri) există în istoricul proiectului Supabase, dar fișierele lor SQL nu se găsesc în repository. Nu recrea un proiect Supabase nou folosind doar folderul actual de migrații: istoricul de bază trebuie recuperat/reconstituit și verificat înainte de a putea declara instalarea reproductibilă de la zero.
+## Sincronizarea migrațiilor
+- Toate cele 20 de migrări înregistrate în Supabase au acum fișiere SQL corespunzătoare în `supabase/migrations` pe ramura `develop`.
+- Primele 10 migrări istorice și migrarea 20 au fost recuperate din coloana `statements` a tabelului intern `supabase_migrations.schema_migrations`; conținutul SQL a fost păstrat fără rescriere.
+- Fișierele 11–19 existau deja în repository.
+- Recuperarea fișierelor nu a rulat din nou migrările pe proiectul Supabase activ și nu a modificat schema sau datele acestuia.
+- Istoricul este sincronizat la nivel de fișiere și versiuni înregistrate; o instalare curată pe un proiect Supabase separat nu a fost executată.
 
 ## Audit final de implementare — 23 noiembrie 2026
 - Prețurile individuale au fost eliminate din fluxul aplicației; `shopping_items.unit_price` este prețul comun al produsului și este accesibil membrilor gospodăriei conform RLS.
@@ -52,10 +54,14 @@ Migrațiile recente pentru linkuri și administrarea gospodăriilor sunt salvate
 - Integrarea automată a prețurilor online, notificările push/e-mail și trimiterea automată a invitațiilor nu sunt implementate.
 - Schema de prețuri online este doar fundație de date; nu există colectare/estimare automată activă.
 
-## Testare și lansare — încă neconfirmate
-- Build-ul TypeScript/Vite nu a fost confirmat cu un rezultat CI vizibil pentru ultimele commit-uri.
-- Nu au fost efectuate teste end-to-end cu două conturi autentificate.
-- OAuth Google/Apple și e-mailurile de confirmare/resetare depind de configurarea furnizorilor și șabloanelor în Supabase.
+## Configurare și publicare — în pregătire
+- Proiectul Supabase activ și cheia publishable curentă au fost verificate; `.env.example` corespunde proiectului ListACT.
+- Nu există încă domeniu, furnizor de hosting sau setări de deploy alese în mod explicit; acestea nu au fost configurate automat.
+- URL-ul Site URL și Redirect URLs din Supabase Auth trebuie completate cu domeniul final după alegerea hostingului.
+- Google/Apple OAuth rămâne opțional și necesită credențiale în consolele furnizorilor și în Supabase.
+- E-mailurile de confirmare și recuperare necesită configurarea adecvată a serviciului de e-mail pentru producție.
+- Build-ul TypeScript/Vite nu este încă confirmat cu un rezultat CI reușit.
+- Testele de acceptanță cu două conturi sunt planificate de utilizator pentru producție.
 - Dictarea vocală depinde de suportul browserului și permisiunea microfonului.
 - Prețurile online nu sunt integrate; nu se folosesc API-uri plătite sau surse fără drepturi de reutilizare confirmate.
 
