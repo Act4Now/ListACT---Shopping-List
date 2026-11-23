@@ -95,12 +95,12 @@ export default function App() {
     const rows = (data ?? []) as Item[];
     const ids = rows.map(item => item.id);
     const { data: overrides, error: overrideError } = ids.length
-      ? await supabase.from("list_item_price_overrides").select("shopping_item_id,personal_unit_price").in("shopping_item_id", ids)
+      ? await supabase.from("list_item_price_overrides").select("shopping_item_id,personal_unit_price").in("shopping_item_id", ids).eq("updated_by", session!.user.id)
       : { data: [], error: null };
     if (overrideError) { setMessage(overrideError.message); return; }
     const prices = new Map((overrides ?? []).map(row => [row.shopping_item_id, Number(row.personal_unit_price)]));
     setItems(rows.map(item => ({ ...item, personal_unit_price: prices.has(item.id) ? prices.get(item.id)! : null })));
-  }, [listId]);
+  }, [listId, session]);
 
   const loadMembers = useCallback(async () => {
     if (!supabase || !householdId) { setMembers([]); return; }
@@ -278,10 +278,10 @@ export default function App() {
     const { error } = await supabase.from("shopping_items").update({ quantity, unit: draft.unit, store_id: draft.store_id || null, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) { setMessage(error.message); return; }
     if (price === null) {
-      const { error: clearError } = await supabase.from("list_item_price_overrides").delete().eq("shopping_item_id", id);
+      const { error: clearError } = await supabase.from("list_item_price_overrides").delete().eq("shopping_item_id", id).eq("updated_by", session!.user.id);
       if (clearError) { setMessage(clearError.message); return; }
     } else {
-      const { error: priceError } = await supabase.from("list_item_price_overrides").upsert({ shopping_item_id: id, personal_unit_price: price, currency: "RON", updated_by: session!.user.id, updated_at: new Date().toISOString() });
+      const { error: priceError } = await supabase.from("list_item_price_overrides").upsert({ shopping_item_id: id, personal_unit_price: price, currency: "RON", updated_by: session!.user.id, updated_at: new Date().toISOString() }, { onConflict: "shopping_item_id,updated_by" });
       if (priceError) { setMessage(priceError.message); return; }
     }
     setEditing(null); await loadItems();
