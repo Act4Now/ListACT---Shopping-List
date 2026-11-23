@@ -50,9 +50,7 @@ export default function App() {
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [bulkStoreId, setBulkStoreId] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteUrl, setInviteUrl] = useState("");
+  const [joinUrl, setJoinUrl] = useState("");
   const [addMode, setAddMode] = useState<"bulk" | "voice" | null>(null);
   const [bulkText, setBulkText] = useState("");
   const [listening, setListening] = useState(false);
@@ -105,19 +103,18 @@ export default function App() {
   }, [listId]);
 
   const loadMembers = useCallback(async () => {
-    if (!supabase || !householdId) { setMembers([]); setInvitations([]); return; }
-    const [{ data: memberRows, error: memberError }, { data: inviteRows, error: inviteError }] = await Promise.all([
-      supabase.from("household_members").select("user_id,role").eq("household_id", householdId).order("joined_at"),
-      supabase.from("household_invitations").select("id,email,expires_at,accepted_at").eq("household_id", householdId).order("created_at", { ascending: false }),
-    ]);
-    if (memberError) setMessage(memberError.message);
-    else {
-      const ids = (memberRows ?? []).map(row => row.user_id);
-      const { data: profileRows } = ids.length ? await supabase.from("profiles").select("id,display_name").in("id", ids) : { data: [] };
-      const names = new Map((profileRows ?? []).map(row => [row.id, row.display_name]));
-      setMembers((memberRows ?? []).map(row => ({ ...row, display_name: names.get(row.user_id) ?? null })) as Member[]);
-    }
-    if (inviteError && !inviteError.message.includes("permission")) setMessage(inviteError.message); else setInvitations((inviteRows ?? []) as Invitation[]);
+    if (!supabase || !householdId) { setMembers([]); return; }
+    const { data: memberRows, error } = await supabase
+      .from("household_members").select("user_id,role").eq("household_id", householdId).order("joined_at");
+    if (error) { setMessage(error.message); return; }
+    const ids = (memberRows ?? []).map(row => row.user_id);
+    const { data: profileRows } = ids.length
+      ? await supabase.from("profiles").select("id,display_name").in("id", ids)
+      : { data: [] };
+    const names = new Map((profileRows ?? []).map(row => [row.id, row.display_name]));
+    setMembers((memberRows ?? []).map(row => ({
+      ...row, display_name: names.get(row.user_id) ?? null
+    })) as Member[]);
   }, [householdId]);
 
   const loadStores = useCallback(async () => {
@@ -145,33 +142,46 @@ export default function App() {
 
   useEffect(() => {
     if (!supabase || !session) return;
-    const token = new URLSearchParams(window.location.search).get("invite");
-    if (!token) return;
-    supabase.rpc("accept_household_invitation", { p_token: token }).then(async ({ error }) => {
-      window.history.replaceState({}, "", window.location.pathname);
-      if (error) setMessage(error.message);
-      else { setMessage("Ai intrat în gospodărie."); await loadHouseholds(); }
+    const params = new URLSearchParams(window.location.search);
+    const householdToken = params.get("join");
+    const householdParam = params.get("household");
+    if (!householdToken || !householdParam) return;
+    supabase.rpc("accept_household_join_link", {
+      p_household_id: householdParam,
+      p_token: householdToken
+    }).then(async ({ error }) => {
+      params.delete("join");
+      params.delete("household");
+      const cleanUrl = window.location.pathname + (params.size ? "?" + params.toString() : "") + window.location.hash;
+      window.history.replaceState({}, "", cleanUrl);
+      if (error) setMessage("Nu am putut conecta gospodăria: " + error.message);
+      else {
+        setMessage("Contul tău este acum conectat la gospodărie.");
+        await loadHouseholds();
+        setHouseholdId(householdParam);
+      }
     });
   }, [session, loadHouseholds]);
 
-  async function createInvitation() {
-    if (!supabase || !session || !householdId || !inviteEmail.trim()) return;
+  async function generateHouseholdLink() {
+    if (!supabase || !session || !householdId) return;
     const bytes = crypto.getRandomValues(new Uint8Array(32));
     const token = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
-    const tokenHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { error } = await supabase.from("household_invitations").insert({ household_id: householdId, email: inviteEmail.trim().toLowerCase(), token_hash: tokenHash, invited_by: session.user.id, expires_at: expiresAt });
+    const { error } = await supabase.rpc("create_household_join_link", {
+      p_household_id: householdId,
+      p_token: token
+    });
     if (error) { setMessage(error.message); return; }
-    const url = new URL(window.location.href); url.searchParams.set("invite", token);
-    setInviteUrl(url.toString()); setInviteEmail(""); await loadMembers();
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.searchParams.set("household", householdId);
+    url.searchParams.set("join", token);
+    setJoinUrl(url.toString());
+    setMessage("Linkul de conectare a fost generat. Copiază-l și trimite-l membrilor familiei.");
   }
-  async function copyInvite() { if (inviteUrl) { await navigator.clipboard.writeText(inviteUrl); setMessage("Linkul invitației a fost copiat."); } }
-
-  async function signIn(provider: "google" | "apple") {
-    if (!supabase) return setMessage("Lipsește configurarea VITE_SUPABASE_URL sau VITE_SUPABASE_PUBLISHABLE_KEY.");
-    const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin } });
-    if (error) setMessage(error.message);
+  async function copyHouseholdLink() {
+    if (!joinUrl) return;
+    await navigator.clipboard.writeText(joinUrl);
+    setMessage("Linkul gospodăriei a fost copiat.");
   }
   async function emailAuth() {
     if (!supabase) return setMessage("Conexiunea Supabase nu este configurată.");
@@ -310,7 +320,13 @@ export default function App() {
     <main className="main-content">
       <div className="welcome"><div><p className="eyebrow">{activeHousehold?.name.toLocaleUpperCase("ro") ?? "GOSPODĂRIA MEA"}</p><h1>{tab === "Liste" ? "Liste de cumpărături" : tab}</h1><p className="subtle">Tot ce ai nevoie, într-un singur loc.</p></div><span className="date-pill">{activeHousehold?.city || "Oraș nesetat"}</span></div>
       {!activeHousehold ? <section className="list-panel empty-state"><House size={30}/><h2>Începe cu gospodăria ta</h2><p>Creează o gospodărie pentru a putea colabora la liste cu familia.</p><div className="inline-create"><input placeholder="Numele gospodăriei" value={householdName} onChange={e => setHouseholdName(e.target.value)}/><input placeholder="Oraș (opțional)" value={householdCity} onChange={e => setHouseholdCity(e.target.value)}/><button className="primary-button" disabled={busy || !householdName.trim()} onClick={() => void createHousehold()}>Creează</button></div></section> : <>
-      {tab === "Acasă" && <><section className="summary-grid"><article className="summary-card"><span>Liste active</span><strong>{lists.length}</strong><small>în gospodărie</small></article><article className="summary-card budget-card"><span>Buget listă selectată</span><strong>{money(total)}</strong><small>{unpriced} produse fără preț</small></article></section><section className="list-panel"><div className="household-city-row"><div><strong>Orașul gospodăriei</strong><small>Folosit pentru estimări de preț locale</small></div>{isHouseholdOwner ? <div className="inline-create"><input aria-label="Orașul gospodăriei" value={householdCityDraft} onChange={e => setHouseholdCityDraft(e.target.value)} placeholder="Ex. București"/><button className="primary-button" onClick={() => void saveHouseholdCity()}>Salvează</button></div> : <span>{activeHousehold?.city || "Nesetat"}</span>}</div><div className="list-heading"><div><h2>Lista curentă</h2><p>{remaining} produse de cumpărat</p></div><button className="primary-button" onClick={() => setTab("Liste")}>Deschide lista</button></div><div className="list-heading list-heading-lower"><div><h2>Gospodărie și membri</h2><p>{members.length} membri</p></div></div><div className="member-list">{members.map(m => <div className="store-row" key={m.user_id}><CircleUserRound size={17}/><span>{m.user_id === session.user.id ? "Tu" : m.display_name || "Membru " + m.user_id.slice(0,8)}</span><small>{m.role === "owner" ? "Administrator" : "Membru"}</small></div>)}</div><div className="inline-create"><input type="email" placeholder="E-mailul persoanei invitate" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}/><button className="primary-button" disabled={!inviteEmail.trim()} onClick={() => void createInvitation()}>Invită</button></div>{inviteUrl && <div className="invite-link"><input readOnly value={inviteUrl}/><button className="primary-button" onClick={() => void copyInvite()}>Copiază linkul</button></div>}<p className="subtle">Invitația este valabilă 7 zile. Trimite linkul persoanei invitate prin canalul dorit.</p>{invitations.length > 0 && <div className="invitation-list"><strong>Invitații emise</strong>{invitations.map(inv => <div className="store-row" key={inv.id}><span>{inv.email}</span><small>{inv.accepted_at ? "Acceptată" : new Date(inv.expires_at) > new Date() ? "În așteptare" : "Expirată"}</small></div>)}</div>}</section></>}
+      {tab === "Acasă" && <><section className="summary-grid"><article className="summary-card"><span>Liste active</span><strong>{lists.length}</strong><small>în gospodărie</small></article><article className="summary-card budget-card"><span>Buget listă selectată</span><strong>{money(total)}</strong><small>{unpriced} produse fără preț</small></article></section><section className="list-panel"><div className="household-city-row"><div><strong>Orașul gospodăriei</strong><small>Folosit pentru estimări de preț locale</small></div>{isHouseholdOwner ? <div className="inline-create"><input aria-label="Orașul gospodăriei" value={householdCityDraft} onChange={e => setHouseholdCityDraft(e.target.value)} placeholder="Ex. București"/><button className="primary-button" onClick={() => void saveHouseholdCity()}>Salvează</button></div> : <span>{activeHousehold?.city || "Nesetat"}</span>}</div><div className="list-heading"><div><h2>Lista curentă</h2><p>{remaining} produse de cumpărat</p></div><button className="primary-button" onClick={() => setTab("Liste")}>Deschide lista</button></div><div className="list-heading list-heading-lower"><div><h2>Gospodărie și membri</h2><p>{members.length} membri</p></div></div><div className="member-list">{members.map(m => <div className="store-row" key={m.user_id}><CircleUserRound size={17}/><span>{m.user_id === session.user.id ? "Tu" : m.display_name || "Membru " + m.user_id.slice(0,8)}</span><small>{m.role === "owner" ? "Administrator" : "Membru"}</small></div>)}</div><div className="household-share">
+          <strong>Conectează familia</strong>
+          <p className="subtle">Generează un link unic pentru această gospodărie. Oricine îl deschide și se autentifică va fi adăugat automat ca membru.</p>
+          {isHouseholdOwner && <button className="primary-button" onClick={() => void generateHouseholdLink()}>Generează linkul gospodăriei</button>}
+          {joinUrl && <div className="invite-link"><input readOnly value={joinUrl}/><button className="primary-button" onClick={() => void copyHouseholdLink()}>Copiază linkul</button></div>}
+          <small>Un link nou îl înlocuiește pe cel anterior. Dacă vrei să oprești accesul prin link, generează unul nou și nu îl redistribui pe cel vechi.</small>
+        </div></section></>}
       {tab === "Liste" && <section className="list-panel"><div className="list-heading"><div><h2>Listele gospodăriei</h2><p>Alege o listă sau creează una nouă</p></div></div><div className="list-picker">{lists.map(l => <button key={l.id} className={l.id === listId ? "list-chip selected" : "list-chip"} onClick={() => setListId(l.id)}>{l.name}</button>)}</div><div className="inline-create"><input placeholder="Numele unei liste noi" value={listName} onChange={e => setListName(e.target.value)} onKeyDown={e => e.key === "Enter" && void createList()}/><button className="primary-button" disabled={busy || !listName.trim()} onClick={() => void createList()}><Plus size={16}/> Creează lista</button></div>
       {activeList && <><div className="list-heading list-heading-lower"><div><h2>{activeList.name}</h2><p>{remaining} produse de cumpărat</p></div><div className="row-actions"><button className="icon-button" aria-label="Redenumește lista" onClick={() => void renameList()}><Pencil size={16}/></button><button className="icon-button" aria-label="Arhivează lista" onClick={() => void archiveList()}><Trash2 size={17}/></button></div></div><section className="summary-grid compact"><article className="summary-card"><span>Produse rămase</span><strong>{remaining}</strong></article><article className="summary-card budget-card"><span>Buget estimat</span><strong>{money(total)}</strong><small>{unpriced} fără preț</small></article></section><div className="bulk-toolbar"><span>{selectedItemIds.length} selectate</span><select aria-label="Magazin pentru produsele selectate" value={bulkStoreId} onChange={e => setBulkStoreId(e.target.value)}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><button className="primary-button" disabled={selectedItemIds.length === 0} onClick={() => void bulkAssignStore()}>Aplică magazinul</button></div><div className="product-list">{items.map(item => <div className={`product-row ${item.is_purchased ? "is-bought" : ""}`} key={item.id}><input className="select-item" type="checkbox" aria-label={`Selectează ${item.name}`} checked={selectedItemIds.includes(item.id)} onChange={e => setSelectedItemIds(old => e.target.checked ? [...old,item.id] : old.filter(id => id !== item.id))}/><button className={`check-button ${item.is_purchased ? "checked" : ""}`} aria-label={item.is_purchased ? "Marchează necumpărat" : "Marchează cumpărat"} onClick={() => void togglePurchased(item)}>{item.is_purchased && <Check size={15}/>}</button><span className="product-name">{item.name}</span>{editing === item.id ? <div className="edit-fields"><input aria-label="Cantitate" type="number" min="0.01" step="0.01" value={draft.quantity} onChange={e => setDraft(d => ({...d,quantity:e.target.value}))}/><select aria-label="Unitate" value={draft.unit} onChange={e => setDraft(d => ({...d,unit:e.target.value as Unit}))}>{units.map(u => <option key={u}>{u}</option>)}</select><select aria-label="Magazin" value={draft.store_id} onChange={e => setDraft(d => ({...d,store_id:e.target.value}))}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><input aria-label="Preț unitar în lei" type="number" min="0" step="0.01" placeholder="Preț" value={draft.price} onChange={e => setDraft(d => ({...d,price:e.target.value}))}/><button className="save-button" onClick={() => void saveEdit(item.id)} aria-label="Salvează"><Check size={16}/></button><button className="cancel-button" onClick={() => setEditing(null)} aria-label="Anulează"><X size={16}/></button></div> : <><span className="quantity">{item.quantity}</span><span className="unit">{item.unit}</span><span className="price">{(item.personal_unit_price ?? item.unit_price) === null ? "—" : money(Number(item.personal_unit_price ?? item.unit_price) * Number(item.quantity))}</span><button className="edit-button" onClick={() => startEdit(item)} aria-label={`Editează ${item.name}`}><Pencil size={16}/></button><button className="edit-button" onClick={() => void deleteItem(item.id)} aria-label={`Șterge ${item.name}`}><X size={16}/></button></>}</div>)}</div>
       <div className="quick-actions"><button onClick={() => { setAddMode(addMode === "bulk" ? null : "bulk"); setShowAdd(false); }}><Plus size={17}/> Adăugare în masă</button><button onClick={() => { setAddMode(addMode === "voice" ? null : "voice"); setShowAdd(false); }}><Mic size={17}/> Adăugare vocală</button></div>
