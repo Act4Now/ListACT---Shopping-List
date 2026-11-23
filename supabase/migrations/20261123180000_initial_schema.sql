@@ -81,6 +81,32 @@ create index shopping_lists_household_idx on public.shopping_lists(household_id)
 create index shopping_items_list_idx on public.shopping_items(list_id);
 create index household_invitations_household_idx on public.household_invitations(household_id);
 
+-- Non-exposed helper schema avoids recursive membership RLS policies.
+create schema if not exists private;
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
+
+create or replace function private.is_household_member(p_household_id uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.household_members hm
+    where hm.household_id = p_household_id and hm.user_id = (select auth.uid())
+  );
+$$;
+create or replace function private.is_household_owner(p_household_id uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.household_members hm
+    where hm.household_id = p_household_id and hm.user_id = (select auth.uid()) and hm.role = 'owner'
+  );
+$$;
+revoke all on function private.is_household_member(uuid) from public, anon;
+revoke all on function private.is_household_owner(uuid) from public, anon;
+grant execute on function private.is_household_member(uuid) to authenticated;
+grant execute on function private.is_household_owner(uuid) to authenticated;
+
 -- Every exposed table is protected by RLS.
 alter table public.profiles enable row level security;
 alter table public.households enable row level security;
@@ -95,58 +121,72 @@ create policy "profiles_insert_own" on public.profiles for insert to authenticat
 create policy "profiles_update_own" on public.profiles for update to authenticated using (id = (select auth.uid())) with check (id = (select auth.uid()));
 
 create policy "households_select_member" on public.households for select to authenticated
-using (exists (select 1 from public.household_members hm where hm.household_id = id and hm.user_id = (select auth.uid())));
+using (private.is_household_member(id));
 create policy "households_insert_creator" on public.households for insert to authenticated with check (created_by = (select auth.uid()));
 create policy "households_update_owner" on public.households for update to authenticated
-using (exists (select 1 from public.household_members hm where hm.household_id = id and hm.user_id = (select auth.uid()) and hm.role = 'owner'))
-with check (exists (select 1 from public.household_members hm where hm.household_id = id and hm.user_id = (select auth.uid()) and hm.role = 'owner'));
+using (private.is_household_owner(id)) with check (private.is_household_owner(id));
 
 create policy "members_select_same_household" on public.household_members for select to authenticated
-using (exists (select 1 from public.household_members self where self.household_id = household_id and self.user_id = (select auth.uid())));
+using (private.is_household_member(household_id));
 create policy "members_insert_owner_or_creator" on public.household_members for insert to authenticated
 with check (
   (user_id = (select auth.uid()) and role = 'owner' and exists (select 1 from public.households h where h.id = household_id and h.created_by = (select auth.uid())))
-  or exists (select 1 from public.household_members self where self.household_id = household_id and self.user_id = (select auth.uid()) and self.role = 'owner')
+  or private.is_household_owner(household_id)
 );
 create policy "members_delete_owner_or_self" on public.household_members for delete to authenticated
-using (user_id = (select auth.uid()) or exists (select 1 from public.household_members self where self.household_id = household_id and self.user_id = (select auth.uid()) and self.role = 'owner'));
+using (user_id = (select auth.uid()) or private.is_household_owner(household_id));
 
-create policy "invitations_select_owner" on public.household_invitations for select to authenticated
-using (exists (select 1 from public.household_members hm where hm.household_id = household_id and hm.user_id = (select auth.uid()) and hm.role = 'owner'));
+create policy "invitations_select_owner" on public.household_invitations for select to authenticated using (private.is_household_owner(household_id));
 create policy "invitations_insert_owner" on public.household_invitations for insert to authenticated
-with check (invited_by = (select auth.uid()) and exists (select 1 from public.household_members hm where hm.household_id = household_id and hm.user_id = (select auth.uid()) and hm.role = 'owner'));
-create policy "invitations_delete_owner" on public.household_invitations for delete to authenticated
-using (exists (select 1 from public.household_members hm where hm.household_id = household_id and hm.user_id = (select auth.uid()) and hm.role = 'owner'));
+with check (invited_by = (select auth.uid()) and private.is_household_owner(household_id));
+create policy "invitations_delete_owner" on public.household_invitations for delete to authenticated using (private.is_household_owner(household_id));
 
-create policy "lists_member_access" on public.shopping_lists for select to authenticated
-using (exists (select 1 from public.household_members hm where hm.household_id = shopping_lists.household_id and hm.user_id = (select auth.uid())));
+create policy "lists_member_access" on public.shopping_lists for select to authenticated using (private.is_household_member(household_id));
 create policy "lists_member_insert" on public.shopping_lists for insert to authenticated
-with check (created_by = (select auth.uid()) and exists (select 1 from public.household_members hm where hm.household_id = shopping_lists.household_id and hm.user_id = (select auth.uid())));
+with check (created_by = (select auth.uid()) and private.is_household_member(household_id));
 create policy "lists_member_update" on public.shopping_lists for update to authenticated
-using (exists (select 1 from public.household_members hm where hm.household_id = shopping_lists.household_id and hm.user_id = (select auth.uid())))
-with check (exists (select 1 from public.household_members hm where hm.household_id = shopping_lists.household_id and hm.user_id = (select auth.uid())));
-create policy "lists_owner_delete" on public.shopping_lists for delete to authenticated
-using (exists (select 1 from public.household_members hm where hm.household_id = shopping_lists.household_id and hm.user_id = (select auth.uid()) and hm.role = 'owner'));
+using (private.is_household_member(household_id)) with check (private.is_household_member(household_id));
+create policy "lists_owner_delete" on public.shopping_lists for delete to authenticated using (private.is_household_owner(household_id));
 
 create policy "stores_select_global_or_member" on public.stores for select to authenticated
-using (is_system or exists (select 1 from public.household_members hm where hm.household_id = stores.household_id and hm.user_id = (select auth.uid())));
+using (is_system or private.is_household_member(household_id));
 create policy "stores_insert_member" on public.stores for insert to authenticated
-with check (not is_system and created_by = (select auth.uid()) and exists (select 1 from public.household_members hm where hm.household_id = stores.household_id and hm.user_id = (select auth.uid())));
+with check (not is_system and created_by = (select auth.uid()) and private.is_household_member(household_id));
 create policy "stores_update_member" on public.stores for update to authenticated
-using (not is_system and exists (select 1 from public.household_members hm where hm.household_id = stores.household_id and hm.user_id = (select auth.uid())))
-with check (not is_system and exists (select 1 from public.household_members hm where hm.household_id = stores.household_id and hm.user_id = (select auth.uid())));
+using (not is_system and private.is_household_member(household_id))
+with check (not is_system and private.is_household_member(household_id));
 create policy "stores_delete_member" on public.stores for delete to authenticated
-using (not is_system and exists (select 1 from public.household_members hm where hm.household_id = stores.household_id and hm.user_id = (select auth.uid())));
+using (not is_system and private.is_household_member(household_id));
 
 create policy "items_member_select" on public.shopping_items for select to authenticated
-using (exists (select 1 from public.shopping_lists sl join public.household_members hm on hm.household_id = sl.household_id where sl.id = shopping_items.list_id and hm.user_id = (select auth.uid())));
+using (exists (select 1 from public.shopping_lists sl where sl.id = shopping_items.list_id and private.is_household_member(sl.household_id)));
 create policy "items_member_insert" on public.shopping_items for insert to authenticated
-with check (created_by = (select auth.uid()) and exists (select 1 from public.shopping_lists sl join public.household_members hm on hm.household_id = sl.household_id where sl.id = shopping_items.list_id and hm.user_id = (select auth.uid())));
+with check (created_by = (select auth.uid()) and exists (select 1 from public.shopping_lists sl where sl.id = shopping_items.list_id and private.is_household_member(sl.household_id)));
 create policy "items_member_update" on public.shopping_items for update to authenticated
-using (exists (select 1 from public.shopping_lists sl join public.household_members hm on hm.household_id = sl.household_id where sl.id = shopping_items.list_id and hm.user_id = (select auth.uid())))
-with check (exists (select 1 from public.shopping_lists sl join public.household_members hm on hm.household_id = sl.household_id where sl.id = shopping_items.list_id and hm.user_id = (select auth.uid())));
+using (exists (select 1 from public.shopping_lists sl where sl.id = shopping_items.list_id and private.is_household_member(sl.household_id)))
+with check (exists (select 1 from public.shopping_lists sl where sl.id = shopping_items.list_id and private.is_household_member(sl.household_id)));
 create policy "items_member_delete" on public.shopping_items for delete to authenticated
-using (exists (select 1 from public.shopping_lists sl join public.household_members hm on hm.household_id = sl.household_id where sl.id = shopping_items.list_id and hm.user_id = (select auth.uid())));
+using (exists (select 1 from public.shopping_lists sl where sl.id = shopping_items.list_id and private.is_household_member(sl.household_id)));
+
+-- Prevent assigning a custom store owned by a different household.
+create or replace function public.validate_item_store()
+returns trigger language plpgsql security invoker set search_path = ''
+as $$
+declare v_household_id uuid; v_store_household_id uuid; v_is_system boolean;
+begin
+  select sl.household_id into v_household_id from public.shopping_lists sl where sl.id = new.list_id;
+  if new.store_id is not null then
+    select s.household_id, s.is_system into v_store_household_id, v_is_system
+      from public.stores s where s.id = new.store_id;
+    if not found or (not v_is_system and v_store_household_id is distinct from v_household_id) then
+      raise exception 'Store does not belong to this household';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+create trigger shopping_item_store_guard before insert or update of list_id, store_id
+on public.shopping_items for each row execute function public.validate_item_store();
 
 -- Keep a profile row for every newly registered auth user.
 create or replace function public.handle_new_user()
