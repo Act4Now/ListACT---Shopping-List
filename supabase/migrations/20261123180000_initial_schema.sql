@@ -94,6 +94,14 @@ as $$
     where hm.household_id = p_household_id and hm.user_id = (select auth.uid())
   );
 $$;
+create or replace function private.is_household_creator(p_household_id uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $
+  select exists (
+    select 1 from public.households h
+    where h.id = p_household_id and h.created_by = (select auth.uid())
+  );
+$;
 create or replace function private.is_household_owner(p_household_id uuid)
 returns boolean language sql stable security definer set search_path = ''
 as $$
@@ -104,8 +112,10 @@ as $$
 $$;
 revoke all on function private.is_household_member(uuid) from public, anon;
 revoke all on function private.is_household_owner(uuid) from public, anon;
+revoke all on function private.is_household_creator(uuid) from public, anon;
 grant execute on function private.is_household_member(uuid) to authenticated;
 grant execute on function private.is_household_owner(uuid) to authenticated;
+grant execute on function private.is_household_creator(uuid) to authenticated;
 
 -- Every exposed table is protected by RLS.
 alter table public.profiles enable row level security;
@@ -130,7 +140,7 @@ create policy "members_select_same_household" on public.household_members for se
 using (private.is_household_member(household_id));
 create policy "members_insert_owner_or_creator" on public.household_members for insert to authenticated
 with check (
-  (user_id = (select auth.uid()) and role = 'owner' and exists (select 1 from public.households h where h.id = household_id and h.created_by = (select auth.uid())))
+  (user_id = (select auth.uid()) and role = 'owner' and private.is_household_creator(household_id))
   or private.is_household_owner(household_id)
 );
 create policy "members_delete_owner_or_self" on public.household_members for delete to authenticated
