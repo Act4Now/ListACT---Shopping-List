@@ -402,7 +402,8 @@ export default function App() {
           <strong>Conectează familia</strong>
           <p className="subtle">Generează un link unic pentru această gospodărie. Oricine îl deschide și se autentifică va fi adăugat automat ca membru.</p>
           {isHouseholdOwner && <button className="primary-button" onClick={() => void generateHouseholdLink()}>Generează linkul gospodăriei</button>}
-          {joinUrl && <div className="invite-link"><input readOnly value={joinUrl}/><button className="primary-button" onClick={() => void copyHouseholdLink()}>Copiază linkul</button><button className="cancel-button" onClick={() => void revokeHouseholdLink()}>Revocă</button></div>}
+          {joinUrl && <div className="invite-link"><input readOnly value={joinUrl}/><button className="primary-button" onClick={() => void copyHouseholdLink()}>Copiază linkul</button></div>}
+          {isHouseholdOwner && <button className="cancel-button" onClick={() => void revokeHouseholdLink()}>Revocă linkul activ</button>}
           <small>Linkul poate fi folosit de oricine îl primește. Generarea unuia nou îl invalidează pe cel vechi; îl poți și revoca separat.</small>
         </div></section></>}
       {tab === "Liste" && <section className="list-panel"><div className="list-heading"><div><h2>Listele gospodăriei</h2><p>Alege o listă sau creează una nouă</p></div></div><div className="list-picker">{lists.map(l => <button key={l.id} className={l.id === listId ? "list-chip selected" : "list-chip"} onClick={() => setListId(l.id)}>{l.name}</button>)}</div><div className="inline-create"><input placeholder="Numele unei liste noi" value={listName} onChange={e => setListName(e.target.value)} onKeyDown={e => e.key === "Enter" && void createList()}/><button className="primary-button" disabled={busy || !listName.trim()} onClick={() => void createList()}><Plus size={16}/> Creează lista</button></div>
