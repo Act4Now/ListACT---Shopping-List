@@ -12,7 +12,7 @@ Ultima verificare: 23 noiembrie 2026.
 - Inițiere OAuth Google și Apple (necesită configurarea furnizorilor în Supabase și în consolele Google/Apple).
 - Recuperare parolă prin e-mail și actualizare parolă după revenirea din link.
 - Gospodării multiple, redenumire și editarea orașului.
-- Conectare prin link cu token aleatoriu de 256 biți; în baza de date se păstrează hash-ul tokenului.
+- Conectare prin link cu token aleatoriu de 256 biți; în baza de date se păstrează hash-ul tokenului. Efectul de acceptare este protejat împotriva procesării duble inclusiv în React Strict Mode.
 - Revocare și regenerare link; eliminarea membrilor și transferul rolului de proprietar.
 - Liste multiple, arhivare, produse individuale și în masă, dictare vocală dependentă de browser.
 - Sincronizare Realtime pentru produsele listei.
@@ -43,6 +43,14 @@ Ultima verificare: 23 noiembrie 2026.
 Migrațiile recente pentru linkuri și administrarea gospodăriilor sunt salvate în `supabase/migrations` și au fost aplicate în Supabase.
 
 **Atenție:** primele 10 migrații istorice (schema inițială, RPC-uri, Realtime, magazine și schema de prețuri) există în istoricul proiectului Supabase, dar fișierele lor SQL nu se găsesc în repository. Nu recrea un proiect Supabase nou folosind doar folderul actual de migrații: istoricul de bază trebuie recuperat/reconstituit și verificat înainte de a putea declara instalarea reproductibilă de la zero.
+
+## Audit final de implementare — 23 noiembrie 2026
+- Prețurile individuale au fost eliminate din fluxul aplicației; `shopping_items.unit_price` este prețul comun al produsului și este accesibil membrilor gospodăriei conform RLS.
+- Abonarea Realtime la `shopping_items` este activă, iar tabela este inclusă în publicația `supabase_realtime`.
+- README-ul a fost corectat pentru a descrie prețurile comune și linkurile de conectare, nu prețurile personale sau invitațiile vechi prin e-mail.
+- Interfața nu implementează ștergerea definitivă a listelor; oferă arhivarea lor.
+- Integrarea automată a prețurilor online, notificările push/e-mail și trimiterea automată a invitațiilor nu sunt implementate.
+- Schema de prețuri online este doar fundație de date; nu există colectare/estimare automată activă.
 
 ## Testare și lansare — încă neconfirmate
 - Build-ul TypeScript/Vite nu a fost confirmat cu un rezultat CI vizibil pentru ultimele commit-uri.
