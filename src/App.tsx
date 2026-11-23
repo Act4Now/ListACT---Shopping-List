@@ -45,7 +45,9 @@ export default function App() {
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState({ quantity: "1", unit: "buc" as Unit, price: "", store_id: "" });
-  const [storeName, setStoreName] = useState("");\n  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);\n  const [bulkStoreId, setBulkStoreId] = useState("");
+  const [storeName, setStoreName] = useState("");
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [bulkStoreId, setBulkStoreId] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -210,7 +212,12 @@ export default function App() {
     const { error } = await supabase.from("shopping_items").update({ quantity, unit: draft.unit, unit_price: price, store_id: draft.store_id || null, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) setMessage(error.message); else { setEditing(null); await loadItems(); }
   }
-  async function bulkAssignStore() {\n    if (!supabase || selectedItemIds.length === 0) return;\n    const { error } = await supabase.from("shopping_items").update({ store_id: bulkStoreId || null, updated_at: new Date().toISOString() }).in("id", selectedItemIds);\n    if (error) setMessage(error.message); else { setSelectedItemIds([]); await loadItems(); }\n  }\n  async function deleteItem(id: string) {
+  async function bulkAssignStore() {
+    if (!supabase || selectedItemIds.length === 0) return;
+    const { error } = await supabase.from("shopping_items").update({ store_id: bulkStoreId || null, updated_at: new Date().toISOString() }).in("id", selectedItemIds);
+    if (error) setMessage(error.message); else { setSelectedItemIds([]); await loadItems(); }
+  }
+  async function deleteItem(id: string) {
     if (!supabase || !window.confirm("Ștergi produsul din listă?")) return;
     const { error } = await supabase.from("shopping_items").delete().eq("id", id);
     if (error) setMessage(error.message); else await loadItems();
