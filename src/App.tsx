@@ -179,8 +179,28 @@ export default function App() {
   }
   async function copyHouseholdLink() {
     if (!joinUrl) return;
-    await navigator.clipboard.writeText(joinUrl);
-    setMessage("Linkul gospodăriei a fost copiat.");
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setMessage("Linkul gospodăriei a fost copiat.");
+    } catch {
+      setMessage("Nu am putut copia automat linkul. Selectează și copiază-l manual.");
+    }
+  }
+  async function revokeHouseholdLink() {
+    if (!supabase || !householdId || !window.confirm("Revoci linkul actual? Persoanele care nu l-au folosit încă nu vor mai putea intra prin el.")) return;
+    const { error } = await supabase.rpc("revoke_household_join_link", { p_household_id: householdId });
+    if (error) setMessage(error.message);
+    else { setJoinUrl(""); setMessage("Linkul gospodăriei a fost revocat."); }
+  }
+  async function signIn(provider: "google" | "apple") {
+    if (!supabase) return setMessage("Conexiunea Supabase nu este configurată.");
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.href }
+    });
+    setBusy(false);
+    if (error) setMessage(error.message);
   }
   async function emailAuth() {
     if (!supabase) return setMessage("Conexiunea Supabase nu este configurată.");
@@ -260,6 +280,22 @@ export default function App() {
     const { error } = await supabase.from("households").update({ city: householdCityDraft.trim() || null, updated_at: new Date().toISOString() }).eq("id", householdId);
     if (error) setMessage(error.message); else { setMessage("Orașul gospodăriei a fost salvat."); await loadHouseholds(); }
   }
+  async function renameHousehold() {
+    if (!supabase || !activeHousehold || !isHouseholdOwner) return;
+    const nextName = window.prompt("Noul nume al gospodăriei", activeHousehold.name)?.trim();
+    if (!nextName || nextName === activeHousehold.name) return;
+    const { error } = await supabase.from("households").update({ name: nextName, updated_at: new Date().toISOString() }).eq("id", householdId);
+    if (error) setMessage(error.message);
+    else { setMessage("Numele gospodăriei a fost actualizat."); await loadHouseholds(); }
+  }
+  async function removeMember(member: Member) {
+    if (!supabase || !householdId || member.role !== "member") return;
+    const label = member.display_name || member.user_id.slice(0, 8);
+    if (!window.confirm("Elimini membrul " + label + " din gospodărie?")) return;
+    const { error } = await supabase.rpc("remove_household_member", { p_household_id: householdId, p_user_id: member.user_id });
+    if (error) setMessage(error.message);
+    else { setMessage("Membrul a fost eliminat."); await loadMembers(); }
+  }
   async function saveProfile() {
     if (!supabase || !session) return;
     const { error } = await supabase.from("profiles").upsert({ id: session.user.id, display_name: profile.display_name.trim() || null, city: profile.city.trim() || null, font_size: profile.font_size, updated_at: new Date().toISOString() });
@@ -269,6 +305,19 @@ export default function App() {
     if (!supabase || !householdId || !storeName.trim() || !session) return;
     const { error } = await supabase.from("stores").insert({ household_id: householdId, name: storeName.trim(), is_system: false, created_by: session.user.id });
     if (error) setMessage(error.message); else { setStoreName(""); await loadStores(); }
+  }
+  async function editStore(store: Store) {
+    if (!supabase || store.is_system || store.household_id !== householdId) return;
+    const nextName = window.prompt("Noul nume al magazinului", store.name)?.trim();
+    if (!nextName || nextName === store.name) return;
+    const { error } = await supabase.from("stores").update({ name: nextName }).eq("id", store.id);
+    if (error) setMessage(error.message); else { setMessage("Magazinul a fost redenumit."); await loadStores(); }
+  }
+  async function deactivateStore(store: Store) {
+    if (!supabase || store.is_system || store.household_id !== householdId) return;
+    if (!window.confirm("Dezactivezi magazinul " + store.name + "? Produsele deja asociate îl vor păstra ca referință.")) return;
+    const { error } = await supabase.from("stores").update({ is_active: false }).eq("id", store.id);
+    if (error) setMessage(error.message); else { setMessage("Magazinul a fost dezactivat."); await loadStores(); }
   }
   const bulkNames = bulkText.replace(/^\s*(?:am nevoie de|aș vrea|as vrea|adaugă|adauga|cumpără|cumpara)\s+/i, "").split(/[\n,;]+|\s+(?:și|si)\s+/i).map(n => n.trim().replace(/^(?:și|si)\s+/i, "")).filter(Boolean);
   const normalizedExisting = new Set(items.map(i => i.name.trim().toLocaleLowerCase("ro")));
@@ -319,12 +368,13 @@ export default function App() {
     <main className="main-content">
       <div className="welcome"><div><p className="eyebrow">{activeHousehold?.name.toLocaleUpperCase("ro") ?? "GOSPODĂRIA MEA"}</p><h1>{tab === "Liste" ? "Liste de cumpărături" : tab}</h1><p className="subtle">Tot ce ai nevoie, într-un singur loc.</p></div><span className="date-pill">{activeHousehold?.city || "Oraș nesetat"}</span></div>
       {!activeHousehold ? <section className="list-panel empty-state"><House size={30}/><h2>Începe cu gospodăria ta</h2><p>Creează o gospodărie pentru a putea colabora la liste cu familia.</p><div className="inline-create"><input placeholder="Numele gospodăriei" value={householdName} onChange={e => setHouseholdName(e.target.value)}/><input placeholder="Oraș (opțional)" value={householdCity} onChange={e => setHouseholdCity(e.target.value)}/><button className="primary-button" disabled={busy || !householdName.trim()} onClick={() => void createHousehold()}>Creează</button></div></section> : <>
-      {tab === "Acasă" && <><section className="summary-grid"><article className="summary-card"><span>Liste active</span><strong>{lists.length}</strong><small>în gospodărie</small></article><article className="summary-card budget-card"><span>Buget listă selectată</span><strong>{money(total)}</strong><small>{unpriced} produse fără preț</small></article></section><section className="list-panel"><div className="household-city-row"><div><strong>Orașul gospodăriei</strong><small>Folosit pentru estimări de preț locale</small></div>{isHouseholdOwner ? <div className="inline-create"><input aria-label="Orașul gospodăriei" value={householdCityDraft} onChange={e => setHouseholdCityDraft(e.target.value)} placeholder="Ex. București"/><button className="primary-button" onClick={() => void saveHouseholdCity()}>Salvează</button></div> : <span>{activeHousehold?.city || "Nesetat"}</span>}</div><div className="list-heading"><div><h2>Lista curentă</h2><p>{remaining} produse de cumpărat</p></div><button className="primary-button" onClick={() => setTab("Liste")}>Deschide lista</button></div><div className="list-heading list-heading-lower"><div><h2>Gospodărie și membri</h2><p>{members.length} membri</p></div></div><div className="member-list">{members.map(m => <div className="store-row" key={m.user_id}><CircleUserRound size={17}/><span>{m.user_id === session.user.id ? "Tu" : m.display_name || "Membru " + m.user_id.slice(0,8)}</span><small>{m.role === "owner" ? "Administrator" : "Membru"}</small></div>)}</div><div className="household-share">
+      {tab === "Acasă" && <><section className="summary-grid"><article className="summary-card"><span>Liste active</span><strong>{lists.length}</strong><small>în gospodărie</small></article><article className="summary-card budget-card"><span>Buget listă selectată</span><strong>{money(total)}</strong><small>{unpriced} produse fără preț</small></article></section><section className="list-panel"><div className="household-city-row"><div><strong>Orașul gospodăriei</strong><small>Folosit pentru estimări de preț locale</small></div>{isHouseholdOwner ? <div className="inline-create"><input aria-label="Orașul gospodăriei" value={householdCityDraft} onChange={e => setHouseholdCityDraft(e.target.value)} placeholder="Ex. București"/><button className="primary-button" onClick={() => void saveHouseholdCity()}>Salvează</button></div> : <span>{activeHousehold?.city || "Nesetat"}</span>}</div><div className="list-heading"><div><h2>Lista curentă</h2><p>{remaining} produse de cumpărat</p></div><button className="primary-button" onClick={() => setTab("Liste")}>Deschide lista</button></div><div className="list-heading list-heading-lower"><div><h2>Gospodărie și membri</h2><p>{members.length} membri</p></div></div><div className="member-list">{members.map(m => <div className="store-row" key={m.user_id}><CircleUserRound size={17}/><span>{m.user_id === session.user.id ? "Tu" : m.display_name || "Membru " + m.user_id.slice(0,8)}</span><small>{m.role === "owner" ? "Administrator" : "Membru"}</small>{isHouseholdOwner && m.role === "member" && <button className="icon-button" aria-label="Elimină membrul" onClick={() => void removeMember(m)}><X size={15}/></button>}</div>)}</div>
+          {isHouseholdOwner && <div className="household-admin-actions"><button className="secondary-button" onClick={() => void renameHousehold()}><Pencil size={15}/> Redenumește gospodăria</button></div>}<div className="household-share">
           <strong>Conectează familia</strong>
           <p className="subtle">Generează un link unic pentru această gospodărie. Oricine îl deschide și se autentifică va fi adăugat automat ca membru.</p>
           {isHouseholdOwner && <button className="primary-button" onClick={() => void generateHouseholdLink()}>Generează linkul gospodăriei</button>}
-          {joinUrl && <div className="invite-link"><input readOnly value={joinUrl}/><button className="primary-button" onClick={() => void copyHouseholdLink()}>Copiază linkul</button></div>}
-          <small>Un link nou îl înlocuiește pe cel anterior. Dacă vrei să oprești accesul prin link, generează unul nou și nu îl redistribui pe cel vechi.</small>
+          {joinUrl && <div className="invite-link"><input readOnly value={joinUrl}/><button className="primary-button" onClick={() => void copyHouseholdLink()}>Copiază linkul</button><button className="cancel-button" onClick={() => void revokeHouseholdLink()}>Revocă</button></div>}
+          <small>Linkul poate fi folosit de oricine îl primește. Generarea unuia nou îl invalidează pe cel vechi; îl poți și revoca separat.</small>
         </div></section></>}
       {tab === "Liste" && <section className="list-panel"><div className="list-heading"><div><h2>Listele gospodăriei</h2><p>Alege o listă sau creează una nouă</p></div></div><div className="list-picker">{lists.map(l => <button key={l.id} className={l.id === listId ? "list-chip selected" : "list-chip"} onClick={() => setListId(l.id)}>{l.name}</button>)}</div><div className="inline-create"><input placeholder="Numele unei liste noi" value={listName} onChange={e => setListName(e.target.value)} onKeyDown={e => e.key === "Enter" && void createList()}/><button className="primary-button" disabled={busy || !listName.trim()} onClick={() => void createList()}><Plus size={16}/> Creează lista</button></div>
       {activeList && <><div className="list-heading list-heading-lower"><div><h2>{activeList.name}</h2><p>{remaining} produse de cumpărat</p></div><div className="row-actions"><button className="icon-button" aria-label="Redenumește lista" onClick={() => void renameList()}><Pencil size={16}/></button><button className="icon-button" aria-label="Arhivează lista" onClick={() => void archiveList()}><Trash2 size={17}/></button></div></div><section className="summary-grid compact"><article className="summary-card"><span>Produse rămase</span><strong>{remaining}</strong></article><article className="summary-card budget-card"><span>Buget estimat</span><strong>{money(total)}</strong><small>{unpriced} fără preț</small></article></section><div className="bulk-toolbar"><span>{selectedItemIds.length} selectate</span><select aria-label="Magazin pentru produsele selectate" value={bulkStoreId} onChange={e => setBulkStoreId(e.target.value)}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><button className="primary-button" disabled={selectedItemIds.length === 0} onClick={() => void bulkAssignStore()}>Aplică magazinul</button></div><div className="product-list">{items.map(item => <div className={`product-row ${item.is_purchased ? "is-bought" : ""}`} key={item.id}><input className="select-item" type="checkbox" aria-label={`Selectează ${item.name}`} checked={selectedItemIds.includes(item.id)} onChange={e => setSelectedItemIds(old => e.target.checked ? [...old,item.id] : old.filter(id => id !== item.id))}/><button className={`check-button ${item.is_purchased ? "checked" : ""}`} aria-label={item.is_purchased ? "Marchează necumpărat" : "Marchează cumpărat"} onClick={() => void togglePurchased(item)}>{item.is_purchased && <Check size={15}/>}</button><span className="product-name">{item.name}</span>{editing === item.id ? <div className="edit-fields"><input aria-label="Cantitate" type="number" min="0.01" step="0.01" value={draft.quantity} onChange={e => setDraft(d => ({...d,quantity:e.target.value}))}/><select aria-label="Unitate" value={draft.unit} onChange={e => setDraft(d => ({...d,unit:e.target.value as Unit}))}>{units.map(u => <option key={u}>{u}</option>)}</select><select aria-label="Magazin" value={draft.store_id} onChange={e => setDraft(d => ({...d,store_id:e.target.value}))}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><input aria-label="Preț unitar în lei" type="number" min="0" step="0.01" placeholder="Preț" value={draft.price} onChange={e => setDraft(d => ({...d,price:e.target.value}))}/><button className="save-button" onClick={() => void saveEdit(item.id)} aria-label="Salvează"><Check size={16}/></button><button className="cancel-button" onClick={() => setEditing(null)} aria-label="Anulează"><X size={16}/></button></div> : <><span className="quantity">{item.quantity}</span><span className="unit">{item.unit}</span><span className="price">{(item.personal_unit_price ?? item.unit_price) === null ? "—" : money(Number(item.personal_unit_price ?? item.unit_price) * Number(item.quantity))}</span><button className="edit-button" onClick={() => startEdit(item)} aria-label={`Editează ${item.name}`}><Pencil size={16}/></button><button className="edit-button" onClick={() => void deleteItem(item.id)} aria-label={`Șterge ${item.name}`}><X size={16}/></button></>}</div>)}</div>
@@ -338,7 +388,7 @@ export default function App() {
       {showAdd ? <div className="add-form"><input autoFocus placeholder="Denumire produs" value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && void addItem()}/><input aria-label="Cantitate" type="number" min="0.01" step="0.01" value={newQty} onChange={e => setNewQty(e.target.value)}/><select aria-label="Unitate" value={newUnit} onChange={e => setNewUnit(e.target.value as Unit)}>{units.map(u => <option key={u}>{u}</option>)}</select><button className="primary-button" disabled={busy} onClick={() => void addItem()}>Adaugă</button><button className="cancel-button" onClick={() => setShowAdd(false)}><X size={18}/></button></div> : <button className="add-product" onClick={() => setShowAdd(true)}><Plus size={18}/> Adaugă produs</button>}
       <div className="list-footer"><span>Prețuri introduse manual; fără estimări inventate</span><strong>{money(total)}</strong></div></>}
       {!activeList && lists.length === 0 && <p className="empty-hint">Nu ai încă liste. Creează prima listă mai sus.</p>}</section>}
-      {tab === "Magazine" && <section className="list-panel"><div className="list-heading"><div><h2>Magazine</h2><p>Magazine comune și proprii gospodăriei</p></div></div><div className="inline-create"><input placeholder="Numele magazinului" value={storeName} onChange={e => setStoreName(e.target.value)} onKeyDown={e => e.key === "Enter" && void addStore()}/><button className="primary-button" onClick={() => void addStore()} disabled={!storeName.trim()}><Plus size={16}/> Adaugă</button></div>{stores.length ? stores.map(s => <div className="store-row" key={s.id}><ShoppingBag size={17}/><span>{s.name}</span><small>{s.is_system ? "Magazin global" : "Gospodăria mea"}</small></div>) : <p className="empty-hint">Nu există magazine configurate încă.</p>}</section>}
+      {tab === "Magazine" && <section className="list-panel"><div className="list-heading"><div><h2>Magazine</h2><p>Magazine comune și proprii gospodăriei</p></div></div><div className="inline-create"><input placeholder="Numele magazinului" value={storeName} onChange={e => setStoreName(e.target.value)} onKeyDown={e => e.key === "Enter" && void addStore()}/><button className="primary-button" onClick={() => void addStore()} disabled={!storeName.trim()}><Plus size={16}/> Adaugă</button></div>{stores.length ? stores.map(s => <div className="store-row" key={s.id}><ShoppingBag size={17}/><span>{s.name}</span><small>{s.is_system ? "Magazin global" : "Gospodăria mea"}</small>{!s.is_system && <><button className="icon-button" aria-label={"Redenumește " + s.name} onClick={() => void editStore(s)}><Pencil size={15}/></button><button className="icon-button" aria-label={"Dezactivează " + s.name} onClick={() => void deactivateStore(s)}><X size={15}/></button></>}</div>) : <p className="empty-hint">Nu există magazine configurate încă.</p>}</section>}
       {tab === "Buget" && <section className="list-panel placeholder-card"><Wallet/><h2>Bugetul listei</h2><strong className="big-total">{money(total)}</strong><p>Totalul include doar produsele necumpărate cu preț introdus. Produse fără preț: {unpriced}.</p><p className="subtle">Nu sunt afișate prețuri online până când sursele gratuite și drepturile de reutilizare nu sunt verificate.</p></section>}
       {tab === "Profil" && <section className="list-panel profile-form"><CircleUserRound/><h2>Profil și preferințe</h2><label>Nume afișat<input value={profile.display_name} onChange={e => setProfile(p => ({...p,display_name:e.target.value}))}/></label><label>Oraș implicit pentru gospodării noi<input value={profile.city} onChange={e => setProfile(p => ({...p,city:e.target.value}))} placeholder="Ex. București"/></label><label>Dimensiunea textului<select value={profile.font_size} onChange={e => setProfile(p => ({...p,font_size:Number(e.target.value)}))}>{[16,18,20,22].map(n => <option key={n} value={n}>{n}px</option>)}</select></label><button className="primary-button" onClick={() => void saveProfile()}>Salvează profilul</button><button className="oauth-button logout" onClick={() => void signOut()}><LogOut size={17}/> Deconectare</button></section>}
       </>}
