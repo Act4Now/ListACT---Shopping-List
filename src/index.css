@@ -20,3 +20,38 @@
 .household-admin-actions{display:flex;justify-content:flex-end;margin-top:10px}
 .household-share .invite-link{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .household-share .invite-link input{flex:1 1 240px;min-width:0;border:1px solid #dfe7df;border-radius:10px;padding:10px;background:#f8faf7;color:#526257;font:inherit;font-size:12px}
+
+
+/* Compact product rows and bulk purchase */
+.product-row{gap:9px;min-width:0}
+.select-item{appearance:none;-webkit-appearance:none;width:23px;height:23px;flex:0 0 23px;margin:0;border:1.6px solid #aebbb0;border-radius:8px;background:#fff;display:grid;place-content:center;cursor:pointer}
+.select-item:checked{background:#27965b;border-color:#27965b}
+.select-item:checked:after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px}
+.select-item:focus-visible{outline:3px solid #9bd5ad;outline-offset:2px}
+.product-name{flex:1 1 0%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.product-quantity{flex:0 0 auto;min-width:54px;text-align:right;white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums;color:#536357}
+.product-row .price{flex:0 0 auto;min-width:65px}
+.product-row .edit-button{flex:0 0 30px}
+.bulk-toolbar{justify-content:space-between;gap:10px}
+.bulk-toolbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.bulk-toolbar-actions select{max-width:145px}
+.bulk-purchase-button{display:inline-flex;align-items:center;gap:6px;background:#218b50}
+.bulk-toolbar button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:600px){
+ .product-row{gap:6px;padding:9px 7px}
+ .select-item{width:22px;height:22px;flex-basis:22px}
+ .product-name{font-size:12px}
+ .product-quantity{min-width:45px;font-size:11px}
+ .product-row .price{min-width:48px;font-size:10px}
+ .product-row .edit-button{width:24px;flex-basis:24px;height:28px}
+ .bulk-toolbar{align-items:flex-start}
+ .bulk-toolbar-actions{width:100%;justify-content:space-between}
+ .bulk-toolbar-actions select{max-width:115px;min-width:0}
+ .bulk-toolbar-actions .primary-button,.bulk-toolbar-actions .secondary-button{padding:9px 10px;font-size:11px}
+}
+@media(max-width:380px){
+ .product-row{gap:4px;padding-inline:6px}
+ .product-quantity{min-width:39px;font-size:10px}
+ .product-row .price{min-width:42px}
+ .product-row .edit-button{width:22px;flex-basis:22px}
+}
