@@ -1,0 +1,1202 @@
+[
+  {
+    "name": "Lapte",
+    "normalized_name": "lapte",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Lapte fără lactoză",
+    "normalized_name": "lapte fara lactoza",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Iaurt natural",
+    "normalized_name": "iaurt natural",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Iaurt grecesc",
+    "normalized_name": "iaurt grecesc",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Iaurt de băut",
+    "normalized_name": "iaurt de baut",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Chefir",
+    "normalized_name": "chefir",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Sana",
+    "normalized_name": "sana",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Smântână",
+    "normalized_name": "smantana",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Unt",
+    "normalized_name": "unt",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Margarină",
+    "normalized_name": "margarina",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Cașcaval",
+    "normalized_name": "cascaval",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Telemea",
+    "normalized_name": "telemea",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Brânză de vaci",
+    "normalized_name": "branza de vaci",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Brânză feta",
+    "normalized_name": "branza feta",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Mozzarella",
+    "normalized_name": "mozzarella",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Parmezan",
+    "normalized_name": "parmezan",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Cremă de brânză",
+    "normalized_name": "crema de branza",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Brânză topită",
+    "normalized_name": "branza topita",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Frișcă lichidă",
+    "normalized_name": "frisca lichida",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Lapte condensat",
+    "normalized_name": "lapte condensat",
+    "category": "lactate",
+    "unit": "buc"
+  },
+  {
+    "name": "Pâine albă",
+    "normalized_name": "paine alba",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Pâine integrală",
+    "normalized_name": "paine integrala",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Pâine toast",
+    "normalized_name": "paine toast",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Chifle",
+    "normalized_name": "chifle",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Baghetă",
+    "normalized_name": "bagheta",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Lipie",
+    "normalized_name": "lipie",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Pită",
+    "normalized_name": "pita",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Covrigi",
+    "normalized_name": "covrigi",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Cornuri",
+    "normalized_name": "cornuri",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Pesmet",
+    "normalized_name": "pesmet",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Făină albă",
+    "normalized_name": "faina alba",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Făină integrală",
+    "normalized_name": "faina integrala",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Mălai",
+    "normalized_name": "malai",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Griș",
+    "normalized_name": "gris",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Fulgi de ovăz",
+    "normalized_name": "fulgi de ovaz",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Cereale pentru mic dejun",
+    "normalized_name": "cereale pentru mic dejun",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Musli",
+    "normalized_name": "musli",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Pesmeți",
+    "normalized_name": "pesmeti",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Biscuiți simpli",
+    "normalized_name": "biscuiti simpli",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Crackers",
+    "normalized_name": "crackers",
+    "category": "panificatie",
+    "unit": "buc"
+  },
+  {
+    "name": "Mere",
+    "normalized_name": "mere",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Pere",
+    "normalized_name": "pere",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Banane",
+    "normalized_name": "banane",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Portocale",
+    "normalized_name": "portocale",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Mandarine",
+    "normalized_name": "mandarine",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Lămâi",
+    "normalized_name": "lamai",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Lime",
+    "normalized_name": "lime",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Grapefruit",
+    "normalized_name": "grapefruit",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Struguri",
+    "normalized_name": "struguri",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Căpșuni",
+    "normalized_name": "capsuni",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Afine",
+    "normalized_name": "afine",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Zmeură",
+    "normalized_name": "zmeura",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Mure",
+    "normalized_name": "mure",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Piersici",
+    "normalized_name": "piersici",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Nectarine",
+    "normalized_name": "nectarine",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Prune",
+    "normalized_name": "prune",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Caise",
+    "normalized_name": "caise",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Cireșe",
+    "normalized_name": "cirese",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Vișine",
+    "normalized_name": "visine",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Pepene verde",
+    "normalized_name": "pepene verde",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Pepene galben",
+    "normalized_name": "pepene galben",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Kiwi",
+    "normalized_name": "kiwi",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Ananas",
+    "normalized_name": "ananas",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Mango",
+    "normalized_name": "mango",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Avocado",
+    "normalized_name": "avocado",
+    "category": "fructe",
+    "unit": "kg"
+  },
+  {
+    "name": "Cartofi",
+    "normalized_name": "cartofi",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Morcovi",
+    "normalized_name": "morcovi",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Ceapă",
+    "normalized_name": "ceapa",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Usturoi",
+    "normalized_name": "usturoi",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Roșii",
+    "normalized_name": "rosii",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Castraveți",
+    "normalized_name": "castraveti",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Ardei gras",
+    "normalized_name": "ardei gras",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Ardei kapia",
+    "normalized_name": "ardei kapia",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Salată verde",
+    "normalized_name": "salata verde",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Varză albă",
+    "normalized_name": "varza alba",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Varză roșie",
+    "normalized_name": "varza rosie",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Conopidă",
+    "normalized_name": "conopida",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Broccoli",
+    "normalized_name": "broccoli",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Dovlecei",
+    "normalized_name": "dovlecei",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Vinete",
+    "normalized_name": "vinete",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Ciuperci",
+    "normalized_name": "ciuperci",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Fasole verde",
+    "normalized_name": "fasole verde",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Mazăre",
+    "normalized_name": "mazare",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Porumb",
+    "normalized_name": "porumb",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Sfeclă roșie",
+    "normalized_name": "sfecla rosie",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Ridichi",
+    "normalized_name": "ridichi",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Țelină",
+    "normalized_name": "telina",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Păstârnac",
+    "normalized_name": "pastarnac",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Pătrunjel rădăcină",
+    "normalized_name": "patrunjel radacina",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Spanac",
+    "normalized_name": "spanac",
+    "category": "legume",
+    "unit": "kg"
+  },
+  {
+    "name": "Piept de pui",
+    "normalized_name": "piept de pui",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Pulpe de pui",
+    "normalized_name": "pulpe de pui",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Aripi de pui",
+    "normalized_name": "aripi de pui",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Carne tocată de porc",
+    "normalized_name": "carne tocata de porc",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Carne tocată de vită",
+    "normalized_name": "carne tocata de vita",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Pulpă de porc",
+    "normalized_name": "pulpa de porc",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Cotlet de porc",
+    "normalized_name": "cotlet de porc",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Mușchiuleț de porc",
+    "normalized_name": "muschiulet de porc",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Carne de vită",
+    "normalized_name": "carne de vita",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Carne de curcan",
+    "normalized_name": "carne de curcan",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Piept de curcan",
+    "normalized_name": "piept de curcan",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Cârnați",
+    "normalized_name": "carnati",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Crenvurști",
+    "normalized_name": "crenvursti",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Șuncă",
+    "normalized_name": "sunca",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Salam",
+    "normalized_name": "salam",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Bacon",
+    "normalized_name": "bacon",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Pește proaspăt",
+    "normalized_name": "peste proaspat",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Somon",
+    "normalized_name": "somon",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Păstrăv",
+    "normalized_name": "pastrav",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Ton conservă",
+    "normalized_name": "ton conserva",
+    "category": "carne_peste",
+    "unit": "kg"
+  },
+  {
+    "name": "Orez",
+    "normalized_name": "orez",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Paste",
+    "normalized_name": "paste",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Spaghete",
+    "normalized_name": "spaghete",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Macaroane",
+    "normalized_name": "macaroane",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Fidea",
+    "normalized_name": "fidea",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Linte",
+    "normalized_name": "linte",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Năut",
+    "normalized_name": "naut",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Fasole uscată",
+    "normalized_name": "fasole uscata",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Fasole conservă",
+    "normalized_name": "fasole conserva",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Roșii pasate",
+    "normalized_name": "rosii pasate",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Bulion",
+    "normalized_name": "bulion",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Ulei de floarea-soarelui",
+    "normalized_name": "ulei de floarea-soarelui",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Ulei de măsline",
+    "normalized_name": "ulei de masline",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Oțet",
+    "normalized_name": "otet",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Sare",
+    "normalized_name": "sare",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Piper",
+    "normalized_name": "piper",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Zahăr",
+    "normalized_name": "zahar",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Miere",
+    "normalized_name": "miere",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Gem",
+    "normalized_name": "gem",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Magiun",
+    "normalized_name": "magiun",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Unt de arahide",
+    "normalized_name": "unt de arahide",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Maioneză",
+    "normalized_name": "maioneza",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Muștar",
+    "normalized_name": "mustar",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Ketchup",
+    "normalized_name": "ketchup",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Sos de soia",
+    "normalized_name": "sos de soia",
+    "category": "bacanie",
+    "unit": "buc"
+  },
+  {
+    "name": "Legume congelate",
+    "normalized_name": "legume congelate",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Amestec mexican congelat",
+    "normalized_name": "amestec mexican congelat",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Cartofi prăjiți congelați",
+    "normalized_name": "cartofi prajiti congelati",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Pizza congelată",
+    "normalized_name": "pizza congelata",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Aluat foietaj",
+    "normalized_name": "aluat foietaj",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Fructe de pădure congelate",
+    "normalized_name": "fructe de padure congelate",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Pește congelat",
+    "normalized_name": "peste congelat",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "File de pește pane",
+    "normalized_name": "file de peste pane",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Înghețată",
+    "normalized_name": "inghetata",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Pâine congelată",
+    "normalized_name": "paine congelata",
+    "category": "congelate",
+    "unit": "buc"
+  },
+  {
+    "name": "Apă plată",
+    "normalized_name": "apa plata",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Apă minerală",
+    "normalized_name": "apa minerala",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Suc de portocale",
+    "normalized_name": "suc de portocale",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Suc de mere",
+    "normalized_name": "suc de mere",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Limonadă",
+    "normalized_name": "limonada",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Ceai",
+    "normalized_name": "ceai",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Cafea boabe",
+    "normalized_name": "cafea boabe",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Cafea măcinată",
+    "normalized_name": "cafea macinata",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Cafea instant",
+    "normalized_name": "cafea instant",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Cacao",
+    "normalized_name": "cacao",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Băutură vegetală de ovăz",
+    "normalized_name": "bautura vegetala de ovaz",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Băutură vegetală de soia",
+    "normalized_name": "bautura vegetala de soia",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Sirop",
+    "normalized_name": "sirop",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Compot",
+    "normalized_name": "compot",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Energizant",
+    "normalized_name": "energizant",
+    "category": "bauturi",
+    "unit": "l"
+  },
+  {
+    "name": "Detergent rufe",
+    "normalized_name": "detergent rufe",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Balsam de rufe",
+    "normalized_name": "balsam de rufe",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Detergent vase",
+    "normalized_name": "detergent vase",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Soluție geamuri",
+    "normalized_name": "solutie geamuri",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Soluție baie",
+    "normalized_name": "solutie baie",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Soluție pardoseli",
+    "normalized_name": "solutie pardoseli",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Dezinfectant suprafețe",
+    "normalized_name": "dezinfectant suprafete",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Bureți vase",
+    "normalized_name": "bureti vase",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Lavete",
+    "normalized_name": "lavete",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Prosoape hârtie",
+    "normalized_name": "prosoape hartie",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Hârtie igienică",
+    "normalized_name": "hartie igienica",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Șervețele",
+    "normalized_name": "servetele",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Saci menajeri",
+    "normalized_name": "saci menajeri",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Folie alimentară",
+    "normalized_name": "folie alimentara",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Folie aluminiu",
+    "normalized_name": "folie aluminiu",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Hârtie de copt",
+    "normalized_name": "hartie de copt",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Baterii",
+    "normalized_name": "baterii",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Becuri",
+    "normalized_name": "becuri",
+    "category": "menaj",
+    "unit": "buc"
+  },
+  {
+    "name": "Șampon",
+    "normalized_name": "sampon",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Balsam păr",
+    "normalized_name": "balsam par",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Gel de duș",
+    "normalized_name": "gel de dus",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Săpun lichid",
+    "normalized_name": "sapun lichid",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Săpun solid",
+    "normalized_name": "sapun solid",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Pastă de dinți",
+    "normalized_name": "pasta de dinti",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Periuță de dinți",
+    "normalized_name": "periuta de dinti",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Apă de gură",
+    "normalized_name": "apa de gura",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Deodorant",
+    "normalized_name": "deodorant",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Cremă de mâini",
+    "normalized_name": "crema de maini",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Cremă hidratantă",
+    "normalized_name": "crema hidratanta",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Lame de ras",
+    "normalized_name": "lame de ras",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Spumă de ras",
+    "normalized_name": "spuma de ras",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Dischete demachiante",
+    "normalized_name": "dischete demachiante",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Bețișoare igienice",
+    "normalized_name": "betisoare igienice",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Absorbante",
+    "normalized_name": "absorbante",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Scutece",
+    "normalized_name": "scutece",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Șervețele umede",
+    "normalized_name": "servetele umede",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Detergent intim",
+    "normalized_name": "detergent intim",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Hrană uscată pentru pisici",
+    "normalized_name": "hrana uscata pentru pisici",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Hrană umedă pentru pisici",
+    "normalized_name": "hrana umeda pentru pisici",
+    "category": "ingrijire",
+    "unit": "buc"
+  },
+  {
+    "name": "Hrană pentru câini",
+    "normalized_name": "hrana pentru caini",
+    "category": "ingrijire",
+    "unit": "buc"
+  }
+]
