@@ -123,3 +123,19 @@ end;
 $$;
 revoke all on function public.refresh_price_reference_aggregates() from public, anon, authenticated;
 grant execute on function public.refresh_price_reference_aggregates() to service_role;
+
+create or replace function private.refresh_price_reference_after_contribution()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform public.refresh_price_reference_aggregates();
+  return new;
+end;
+$$;
+drop trigger if exists refresh_price_reference_after_contribution on public.household_price_contributions;
+create trigger refresh_price_reference_after_contribution
+after insert or update on public.household_price_contributions
+for each row execute function private.refresh_price_reference_after_contribution();
