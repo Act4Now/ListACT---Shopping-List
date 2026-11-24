@@ -60,3 +60,8 @@
 /* Place the single-product action at the right end of the bottom action row */
 .quick-actions .add-single-product{margin-left:auto;background:#218b50;border-color:#218b50;color:#fff;font-weight:700;white-space:nowrap}
 @media(max-width:600px){.quick-actions .add-single-product{margin-left:auto}}
+
+
+/* The two primary actions exchange positions: add at the top, purchase at the bottom */
+.bulk-toolbar-actions .add-single-product{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.quick-actions .bulk-purchase-button{margin-left:auto;background:#218b50;border-color:#218b50;color:#fff;font-weight:700;white-space:nowrap}
