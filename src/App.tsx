@@ -13,6 +13,7 @@ type SpeechResultLike = { 0: { transcript: string }; length: number };
 type SpeechEventLike = { results: ArrayLike<SpeechResultLike> };
 type SpeechRecognitionLike = { lang: string; interimResults: boolean; onresult: ((event: SpeechEventLike) => void) | null; onerror: (() => void) | null; onend: (() => void) | null; start: () => void; stop: () => void };
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 const units: Unit[] = ["buc", "kg", "g", "l", "ml"];
 const money = (n: number) => new Intl.NumberFormat("ro-RO", { style: "currency", currency: "RON" }).format(n);
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -58,6 +59,36 @@ export default function App() {
   const [bulkText, setBulkText] = useState("");
   const [listening, setListening] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches
+      || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    setIsInstalled(standalone);
+    const onBeforeInstall = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const onInstalled = () => { setIsInstalled(true); setInstallPrompt(null); };
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  async function installApp() {
+    if (!installPrompt) {
+      setMessage("Pentru instalare, deschide meniul browserului și alege «Instalează aplicația» sau «Adaugă la ecranul principal».");
+      return;
+    }
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") setMessage("ListACT a fost adăugată pe dispozitiv.");
+    setInstallPrompt(null);
+  }
 
   const activeHousehold = households.find(h => h.id === householdId) ?? null;
   const activeList = lists.find(l => l.id === listId) ?? null;
@@ -446,7 +477,7 @@ export default function App() {
   if (!session) return <div className="auth-shell"><div className="auth-card"><a className="brand" href="#"><span className="brand-mark">L</span><span>List<span className="brand-accent">ACT</span></span></a><p className="eyebrow">CUMPĂRĂTURI ÎMPREUNĂ</p><h1>{recoveryMode ? "Alege o parolă nouă" : authMode === "login" ? "Bine ai revenit!" : "Creează-ți contul"}</h1><p className="subtle">Liste simple, buget clar, toată familia conectată.</p>{!recoveryMode && <label>E-mail<input type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="adresa@exemplu.ro"/></label>}<label>{recoveryMode ? "Parolă nouă" : "Parolă"}<input type="password" autoComplete={recoveryMode || authMode === "signup" ? "new-password" : "current-password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Cel puțin 8 caractere"/></label><button className="primary-button full" disabled={busy || password.length < 8 || (!recoveryMode && !email)} onClick={() => void emailAuth()}>{busy ? "Se procesează…" : recoveryMode ? "Salvează parola nouă" : authMode === "login" ? "Autentificare" : "Creează cont"}</button>{!recoveryMode && authMode === "login" && <button className="text-button" disabled={busy || !email.trim()} onClick={() => void sendPasswordReset()}>Am uitat parola</button>}{!recoveryMode && <div className="auth-divider"><span>sau</span></div>}{!recoveryMode && <><button className="oauth-button" onClick={() => void signIn("google")}>Continuă cu Google</button><button className="oauth-button" onClick={() => void signIn("apple")}><Apple size={17}/> Continuă cu Apple</button><p className="auth-switch">{authMode === "login" ? "Nu ai cont?" : "Ai deja cont?"} <button onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>{authMode === "login" ? "Înregistrează-te" : "Autentifică-te"}</button></p></>}{message && <p className="notice">{message}</p>} {!supabase && <p className="notice">Configurarea publică Supabase lipsește din mediul de rulare.</p>}</div></div>;
 
   return <div className="app-shell" style={{ fontSize: profile.font_size, ["--font-scale" as any]: profile.font_size / 16 }}>
-    <header className="topbar"><a className="brand" href="#"><span className="brand-mark">L</span><span>List<span className="brand-accent">ACT</span></span></a><div className="top-actions">{households.length > 0 && <select aria-label="Gospodărie activă" className="household-select" value={householdId} onChange={e => setHouseholdId(e.target.value)}>{households.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}</select>}<button className="avatar" onClick={() => setTab("Profil")} aria-label="Profil"><CircleUserRound size={21}/></button></div></header>
+    <header className="topbar"><a className="brand" href="#"><span className="brand-mark">L</span><span>List<span className="brand-accent">ACT</span></span></a><div className="top-actions">{!isInstalled && <button className="secondary-button" onClick={() => void installApp()} aria-label="Instalează ListACT">Instalează aplicația</button>}{households.length > 0 && <select aria-label="Gospodărie activă" className="household-select" value={householdId} onChange={e => setHouseholdId(e.target.value)}>{households.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}</select>}<button className="avatar" onClick={() => setTab("Profil")} aria-label="Profil"><CircleUserRound size={21}/></button></div></header>
     <main className="main-content">
       <div className="welcome"><div><p className="eyebrow">{activeHousehold?.name.toLocaleUpperCase("ro") ?? "GOSPODĂRIA MEA"}</p><h1>{tab === "Liste" ? "Liste de cumpărături" : tab}</h1><p className="subtle">Tot ce ai nevoie, într-un singur loc.</p></div><span className="date-pill">{activeHousehold?.city || "Oraș nesetat"}</span></div>
       {!activeHousehold ? <section className="list-panel empty-state"><House size={30}/><h2>Începe cu gospodăria ta</h2><p>Creează o gospodărie pentru a putea colabora la liste cu familia.</p><div className="inline-create"><input placeholder="Numele gospodăriei" value={householdName} onChange={e => setHouseholdName(e.target.value)}/><input placeholder="Oraș (opțional)" value={householdCity} onChange={e => setHouseholdCity(e.target.value)}/><button className="primary-button" disabled={busy || !householdName.trim()} onClick={() => void createHousehold()}>Creează</button></div></section> : <>
