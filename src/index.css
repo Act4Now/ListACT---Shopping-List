@@ -55,3 +55,8 @@
  .product-row .price{min-width:42px}
  .product-row .edit-button{width:22px;flex-basis:22px}
 }
+
+
+/* Place the single-product action at the right end of the bottom action row */
+.quick-actions .add-single-product{margin-left:auto;background:#218b50;border-color:#218b50;color:#fff;font-weight:700;white-space:nowrap}
+@media(max-width:600px){.quick-actions .add-single-product{margin-left:auto}}
