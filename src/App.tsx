@@ -6,7 +6,7 @@ type Unit = "buc" | "kg" | "g" | "l" | "ml";
 type Tab = "Acasă" | "Liste" | "Magazine" | "Buget" | "Profil";
 type Household = { id: string; name: string; city: string | null };
 type ShoppingList = { id: string; household_id: string; name: string; archived_at: string | null };
-type Item = { id: string; list_id: string; name: string; quantity: number; unit: Unit; unit_price: number | null; is_purchased: boolean; store_id: string | null };
+type Item = { id: string; list_id: string; name: string; quantity: number; unit: Unit; unit_price: number | null; is_purchased: boolean; store_id: string | null };\ntype PriceReference = { median_unit_price: number; sample_count: number; city: string };
 type Store = { id: string; name: string; household_id: string | null; is_system: boolean; is_active: boolean };
 type Member = { user_id: string; role: "owner" | "member"; display_name?: string | null };
 type SpeechResultLike = { 0: { transcript: string }; length: number };
@@ -15,6 +15,8 @@ type SpeechRecognitionLike = { lang: string; interimResults: boolean; onresult: 
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 const units: Unit[] = ["buc", "kg", "g", "l", "ml"];
+const normalizePriceName = (value: string) => value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("ro").trim().replace(/\\s+/g, " ");
+const normalizePriceCity = (value: string) => normalizePriceName(value);
 const money = (n: number) => new Intl.NumberFormat("ro-RO", { style: "currency", currency: "RON" }).format(n);
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
@@ -58,7 +60,7 @@ export default function App() {
   const [addMode, setAddMode] = useState<"bulk" | "voice" | null>(null);
   const [bulkText, setBulkText] = useState("");
   const [listening, setListening] = useState(false);
-  const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null);
+  const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null);\n  const [priceReferences, setPriceReferences] = useState<Record<string, PriceReference>>({});
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
@@ -163,6 +165,45 @@ export default function App() {
   useEffect(() => { if (session) { void loadHouseholds(); void loadProfile(); } else { setHouseholds([]); setLists([]); setItems([]); setStores([]); } }, [session, loadHouseholds, loadProfile]);
   useEffect(() => { void loadLists(); void loadStores(); void loadMembers(); }, [householdId, loadLists, loadStores, loadMembers]);
   useEffect(() => { void loadItems(); }, [listId, loadItems]);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPriceReferences() {
+      if (!supabase || import.meta.env.VITE_ENABLE_REFERENCE_PRICES !== "true" || !activeHousehold?.city || items.length === 0) {
+        setPriceReferences({});
+        return;
+      }
+      const unpriced = items.filter(item => item.unit_price === null);
+      const names = [...new Set(unpriced.map(item => normalizePriceName(item.name)))];
+      if (!names.length) { setPriceReferences({}); return; }
+      const { data: products, error: productError } = await supabase.from("price_products")
+        .select("id,normalized_name").in("normalized_name", names);
+      if (productError || !products?.length) { setPriceReferences({}); return; }
+      const productIds = products.map(product => product.id);
+      const productByName = new Map(products.map(product => [product.normalized_name, product.id]));
+      const { data: aggregates, error: aggregateError } = await supabase.from("price_reference_aggregates")
+        .select("product_id,city,median_unit_price,sample_count")
+        .in("product_id", productIds).eq("city", normalizePriceCity(activeHousehold.city))
+        .order("window_end", { ascending: false });
+      if (cancelled) return;
+      if (aggregateError || !aggregates) { setPriceReferences({}); return; }
+      const newest = new Map<string, PriceReference>();
+      for (const aggregate of aggregates) {
+        if (!newest.has(aggregate.product_id)) newest.set(aggregate.product_id, {
+          median_unit_price: Number(aggregate.median_unit_price),
+          sample_count: Number(aggregate.sample_count), city: aggregate.city
+        });
+      }
+      const byItem: Record<string, PriceReference> = {};
+      for (const item of unpriced) {
+        const productId = productByName.get(normalizePriceName(item.name));
+        const reference = productId ? newest.get(productId) : undefined;
+        if (reference) byItem[item.id] = reference;
+      }
+      setPriceReferences(byItem);
+    }
+    void loadPriceReferences();
+    return () => { cancelled = true; };
+  }, [items, activeHousehold?.city]);
   useEffect(() => { setSelectedItemIds([]); setEditing(null); }, [householdId, listId]);
   useEffect(() => { setHouseholdCityDraft(activeHousehold?.city ?? ""); }, [householdId]);
   useEffect(() => {
@@ -303,6 +344,19 @@ export default function App() {
     setEditing(item.id);
     setDraft({ quantity: String(item.quantity), unit: item.unit, price: item.unit_price === null ? "" : String(item.unit_price), store_id: item.store_id ?? "" });
   }
+  async function usePriceReference(item: Item) {
+    if (!supabase || item.unit_price !== null) return;
+    const reference = priceReferences[item.id];
+    if (!reference) return;
+    const { data, error } = await supabase.from("shopping_items")
+      .update({ unit_price: reference.median_unit_price, updated_at: new Date().toISOString() })
+      .eq("id", item.id).is("unit_price", null).select("id");
+    if (error) { setMessage(error.message); return; }
+    if (!data?.length) { setMessage("Produsul are deja un preț. Nu l-am suprascris."); return; }
+    setMessage("Estimarea a fost copiată ca preț al produsului.");
+    await loadItems();
+  }
+
   async function saveEdit(id: string) {
     if (!supabase) return;
     const quantity = Number(draft.quantity);
@@ -429,7 +483,7 @@ export default function App() {
       ...(groupByStore ? [<div className="store-group-heading" key={`group-${key}`}>{key === "__none" ? "Fără magazin" : storeLabel(groupItems[0])}</div>] : []),
       ...groupItems.map(item => <div className={`product-row ${item.is_purchased ? "is-bought" : ""}`} key={item.id}>
         {!item.is_purchased ? <input className="select-item" type="checkbox" aria-label={`Selectează ${item.name}`} checked={selectedItemIds.includes(item.id)} onChange={e => setSelectedItemIds(old => e.target.checked ? [...old,item.id] : old.filter(id => id !== item.id))}/> : <span className="selection-spacer" />}
-        {editing === item.id ? <div className="edit-fields"><input aria-label="Cantitate" type="number" min="0.01" step="0.01" value={draft.quantity} onChange={e => setDraft(d => ({...d,quantity:e.target.value}))}/><select aria-label="Unitate" value={draft.unit} onChange={e => setDraft(d => ({...d,unit:e.target.value as Unit}))}>{units.map(u => <option key={u}>{u}</option>)}</select><select aria-label="Magazin" value={draft.store_id} onChange={e => setDraft(d => ({...d,store_id:e.target.value}))}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><input aria-label="Preț unitar în lei" type="number" min="0" step="0.01" placeholder="Preț" value={draft.price} onChange={e => setDraft(d => ({...d,price:e.target.value}))}/><button className="save-button" onClick={() => void saveEdit(item.id)} aria-label="Salvează"><Check size={16}/></button><button className="cancel-button" onClick={() => setEditing(null)} aria-label="Anulează"><X size={16}/></button></div> : <><div className="product-main"><span className="product-name" title={item.name}>{item.name}</span><small className="product-store-label">{storeLabel(item)}</small></div><span className="product-quantity">{item.quantity} {item.unit}</span><span className="price">{item.unit_price === null ? "—" : money(Number(item.unit_price) * Number(item.quantity))}</span>{item.is_purchased && <button className="restore-button" disabled={busy} onClick={() => void restorePurchasedItem(item.id)} aria-label={`Readu ${item.name} în listă`} title="Readu în listă"><RotateCcw size={15}/></button>}<button className="edit-button" onClick={() => startEdit(item)} aria-label={`Editează ${item.name}`}><Pencil size={16}/></button><button className="edit-button" onClick={() => void deleteItem(item.id)} aria-label={`Șterge ${item.name}`}><X size={16}/></button></>}
+        {editing === item.id ? <div className="edit-fields"><input aria-label="Cantitate" type="number" min="0.01" step="0.01" value={draft.quantity} onChange={e => setDraft(d => ({...d,quantity:e.target.value}))}/><select aria-label="Unitate" value={draft.unit} onChange={e => setDraft(d => ({...d,unit:e.target.value as Unit}))}>{units.map(u => <option key={u}>{u}</option>)}</select><select aria-label="Magazin" value={draft.store_id} onChange={e => setDraft(d => ({...d,store_id:e.target.value}))}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><input aria-label="Preț unitar în lei" type="number" min="0" step="0.01" placeholder="Preț" value={draft.price} onChange={e => setDraft(d => ({...d,price:e.target.value}))}/><button className="save-button" onClick={() => void saveEdit(item.id)} aria-label="Salvează"><Check size={16}/></button><button className="cancel-button" onClick={() => setEditing(null)} aria-label="Anulează"><X size={16}/></button></div> : <><div className="product-main"><span className="product-name" title={item.name}>{item.name}</span><small className="product-store-label">{storeLabel(item)}</small>{item.unit_price === null && priceReferences[item.id] && <small className="price-reference">≈ {money(priceReferences[item.id].median_unit_price)} · estimare din {priceReferences[item.id].sample_count} observații, {activeHousehold?.city}<button className="text-button" onClick={() => void usePriceReference(item)}>Folosește</button></small>}</div><span className="product-quantity">{item.quantity} {item.unit}</span><span className="price">{item.unit_price === null ? "—" : money(Number(item.unit_price) * Number(item.quantity))}</span>{item.is_purchased && <button className="restore-button" disabled={busy} onClick={() => void restorePurchasedItem(item.id)} aria-label={`Readu ${item.name} în listă`} title="Readu în listă"><RotateCcw size={15}/></button>}<button className="edit-button" onClick={() => startEdit(item)} aria-label={`Editează ${item.name}`}><Pencil size={16}/></button><button className="edit-button" onClick={() => void deleteItem(item.id)} aria-label={`Șterge ${item.name}`}><X size={16}/></button></>}
       </div>)
     ]);
   };
