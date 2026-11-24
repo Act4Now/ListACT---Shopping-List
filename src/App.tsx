@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
-import { Apple, Check, CircleUserRound, House, ListChecks, LogOut, Pencil, Plus, ShoppingBag, Wallet, X, Trash2, Mic } from "lucide-react";
+import { Apple, Check, CircleUserRound, House, ListChecks, LogOut, Pencil, Plus, ShoppingBag, Wallet, X, Trash2, Mic, RotateCcw } from "lucide-react";
 
 type Unit = "buc" | "kg" | "g" | "l" | "ml";
 type Tab = "Acasă" | "Liste" | "Magazine" | "Buget" | "Profil";
@@ -49,6 +49,9 @@ export default function App() {
   const [storeName, setStoreName] = useState("");
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [bulkStoreId, setBulkStoreId] = useState("");
+  const [storeFilter, setStoreFilter] = useState("all");
+  const [groupByStore, setGroupByStore] = useState(false);
+  const [showPurchasedHistory, setShowPurchasedHistory] = useState(true);
   const [members, setMembers] = useState<Member[]>([]);
   const [joinUrl, setJoinUrl] = useState("");
   const [addMode, setAddMode] = useState<"bulk" | "voice" | null>(null);
@@ -133,7 +136,12 @@ export default function App() {
   useEffect(() => { setHouseholdCityDraft(activeHousehold?.city ?? ""); }, [householdId]);
   useEffect(() => {
     if (!supabase || !listId) return;
-    const channel = supabase.channel(`list-${listId}`).on("postgres_changes", { event: "*", schema: "public", table: "shopping_items", filter: `list_id=eq.${listId}` }, () => { void loadItems(); }).subscribe();
+    const channel = supabase.channel(`list-${listId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "shopping_items", filter: `list_id=eq.${listId}` }, () => { void loadItems(); })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "shopping_items", filter: `list_id=eq.${listId}` }, () => { void loadItems(); })
+      // Supabase cannot filter DELETE events; RLS protects the subsequent list read.
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "shopping_items" }, () => { void loadItems(); })
+      .subscribe();
     return () => { void supabase?.removeChannel(channel); };
   }, [listId, loadItems]);
 
@@ -304,6 +312,14 @@ export default function App() {
       : "Nu a fost modificat niciun produs.");
     await loadItems();
   }
+  async function restorePurchasedItem(id: string) {
+    if (!supabase || busy) return;
+    setBusy(true);
+    const { error } = await supabase.from("shopping_items").update({ is_purchased: false, purchased_at: null, updated_at: new Date().toISOString() }).eq("id", id).eq("list_id", listId);
+    setBusy(false);
+    if (error) setMessage(error.message);
+    else { setMessage("Produsul a fost readus în lista de cumpărături."); await loadItems(); }
+  }
   async function deleteItem(id: string) {
     if (!supabase || !window.confirm("Ștergi produsul din listă?")) return;
     const { error } = await supabase.from("shopping_items").delete().eq("id", id);
@@ -362,6 +378,30 @@ export default function App() {
     if (error) setMessage(error.message); else { setMessage("Magazinul a fost dezactivat."); await loadStores(); }
   }
   const bulkNames = bulkText.replace(/^\s*(?:am nevoie de|aș vrea|as vrea|adaugă|adauga|cumpără|cumpara)\s+/i, "").split(/[\n,;]+|\s+(?:și|si)\s+/i).map(n => n.trim().replace(/^(?:și|si)\s+/i, "")).filter(Boolean);
+  const visibleItems = items.filter(item => storeFilter === "all" || (storeFilter === "none" ? !item.store_id : item.store_id === storeFilter));
+  const activeItems = visibleItems.filter(item => !item.is_purchased);
+  const purchasedItems = visibleItems.filter(item => item.is_purchased);
+  const storeLabel = (item: Item) => stores.find(store => store.id === item.store_id)?.name ?? "Fără magazin";
+  const renderItemRows = (rows: Item[]) => {
+    const groups = new Map<string, Item[]>();
+    for (const item of rows) {
+      const key = groupByStore ? (item.store_id ?? "__none") : "__all";
+      groups.set(key, [...(groups.get(key) ?? []), item]);
+    }
+    const entries = [...groups.entries()].sort(([a], [b]) => {
+      if (a === "__all") return -1;
+      if (a === "__none") return 1;
+      if (b === "__none") return -1;
+      return storeLabel(groups.get(a)![0]).localeCompare(storeLabel(groups.get(b)![0]), "ro");
+    });
+    return entries.flatMap(([key, groupItems]) => [
+      ...(groupByStore ? [<div className="store-group-heading" key={`group-${key}`}>{key === "__none" ? "Fără magazin" : storeLabel(groupItems[0])}</div>] : []),
+      ...groupItems.map(item => <div className={`product-row ${item.is_purchased ? "is-bought" : ""}`} key={item.id}>
+        {!item.is_purchased ? <input className="select-item" type="checkbox" aria-label={`Selectează ${item.name}`} checked={selectedItemIds.includes(item.id)} onChange={e => setSelectedItemIds(old => e.target.checked ? [...old,item.id] : old.filter(id => id !== item.id))}/> : <span className="selection-spacer" />}
+        {editing === item.id ? <div className="edit-fields"><input aria-label="Cantitate" type="number" min="0.01" step="0.01" value={draft.quantity} onChange={e => setDraft(d => ({...d,quantity:e.target.value}))}/><select aria-label="Unitate" value={draft.unit} onChange={e => setDraft(d => ({...d,unit:e.target.value as Unit}))}>{units.map(u => <option key={u}>{u}</option>)}</select><select aria-label="Magazin" value={draft.store_id} onChange={e => setDraft(d => ({...d,store_id:e.target.value}))}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><input aria-label="Preț unitar în lei" type="number" min="0" step="0.01" placeholder="Preț" value={draft.price} onChange={e => setDraft(d => ({...d,price:e.target.value}))}/><button className="save-button" onClick={() => void saveEdit(item.id)} aria-label="Salvează"><Check size={16}/></button><button className="cancel-button" onClick={() => setEditing(null)} aria-label="Anulează"><X size={16}/></button></div> : <><div className="product-main"><span className="product-name" title={item.name}>{item.name}</span><small className="product-store-label">{storeLabel(item)}</small></div><span className="product-quantity">{item.quantity} {item.unit}</span><span className="price">{item.unit_price === null ? "—" : money(Number(item.unit_price) * Number(item.quantity))}</span>{item.is_purchased && <button className="restore-button" disabled={busy} onClick={() => void restorePurchasedItem(item.id)} aria-label={`Readu ${item.name} în listă`} title="Readu în listă"><RotateCcw size={15}/></button>}<button className="edit-button" onClick={() => startEdit(item)} aria-label={`Editează ${item.name}`}><Pencil size={16}/></button><button className="edit-button" onClick={() => void deleteItem(item.id)} aria-label={`Șterge ${item.name}`}><X size={16}/></button></>}
+      </div>)
+    ]);
+  };
   const normalizedExisting = new Set(items.map(i => i.name.trim().toLocaleLowerCase("ro")));
   const bulkDuplicates = bulkNames.filter((n, i) => normalizedExisting.has(n.toLocaleLowerCase("ro")) || bulkNames.slice(0, i).some(p => p.toLocaleLowerCase("ro") === n.toLocaleLowerCase("ro")));
   function startVoice() {
@@ -420,7 +460,7 @@ export default function App() {
           <small>Linkul poate fi folosit de oricine îl primește. Generarea unuia nou îl invalidează pe cel vechi; îl poți și revoca separat.</small>
         </div></section></>}
       {tab === "Liste" && <section className="list-panel"><div className="list-heading"><div><h2>Listele gospodăriei</h2><p>Alege o listă sau creează una nouă</p></div></div><div className="list-picker">{lists.map(l => <button key={l.id} className={l.id === listId ? "list-chip selected" : "list-chip"} onClick={() => setListId(l.id)}>{l.name}</button>)}</div><div className="inline-create"><input placeholder="Numele unei liste noi" value={listName} onChange={e => setListName(e.target.value)} onKeyDown={e => e.key === "Enter" && void createList()}/><button className="primary-button" disabled={busy || !listName.trim()} onClick={() => void createList()}><Plus size={16}/> Creează lista</button></div>
-      {activeList && <><div className="list-heading list-heading-lower"><div><h2>{activeList.name}</h2><p>{remaining} produse de cumpărat</p></div><div className="row-actions"><button className="icon-button" aria-label="Redenumește lista" onClick={() => void renameList()}><Pencil size={16}/></button><button className="icon-button" aria-label="Arhivează lista" onClick={() => void archiveList()}><Trash2 size={17}/></button></div></div><section className="summary-grid compact"><article className="summary-card"><span>Produse rămase</span><strong>{remaining}</strong></article><article className="summary-card budget-card"><span>Buget estimat</span><strong>{money(total)}</strong><small>{unpriced} fără preț</small></article></section><div className="bulk-toolbar"><span>{selectedItemIds.length} selectate</span><div className="bulk-toolbar-actions"><select aria-label="Magazin pentru produsele selectate" value={bulkStoreId} onChange={e => setBulkStoreId(e.target.value)}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><button className="primary-button add-single-product" onClick={() => { setShowAdd(value => !value); setAddMode(null); }}><Plus size={17}/> Adaugă produs</button><button className="secondary-button" disabled={busy || selectedItemIds.length === 0} onClick={() => void bulkAssignStore()}>Aplică magazinul</button></div></div><div className="product-list">{items.map(item => <div className={`product-row ${item.is_purchased ? "is-bought" : ""}`} key={item.id}><input className="select-item" type="checkbox" aria-label={`Selectează ${item.name}`} checked={selectedItemIds.includes(item.id)} onChange={e => setSelectedItemIds(old => e.target.checked ? [...old,item.id] : old.filter(id => id !== item.id))}/><span className="product-name" title={item.name}>{item.name}</span>{editing === item.id ? <div className="edit-fields"><input aria-label="Cantitate" type="number" min="0.01" step="0.01" value={draft.quantity} onChange={e => setDraft(d => ({...d,quantity:e.target.value}))}/><select aria-label="Unitate" value={draft.unit} onChange={e => setDraft(d => ({...d,unit:e.target.value as Unit}))}>{units.map(u => <option key={u}>{u}</option>)}</select><select aria-label="Magazin" value={draft.store_id} onChange={e => setDraft(d => ({...d,store_id:e.target.value}))}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><input aria-label="Preț unitar în lei" type="number" min="0" step="0.01" placeholder="Preț" value={draft.price} onChange={e => setDraft(d => ({...d,price:e.target.value}))}/><button className="save-button" onClick={() => void saveEdit(item.id)} aria-label="Salvează"><Check size={16}/></button><button className="cancel-button" onClick={() => setEditing(null)} aria-label="Anulează"><X size={16}/></button></div> : <><span className="product-quantity">{item.quantity} {item.unit}</span><span className="price">{item.unit_price === null ? "—" : money(Number(item.unit_price) * Number(item.quantity))}</span><button className="edit-button" onClick={() => startEdit(item)} aria-label={`Editează ${item.name}`}><Pencil size={16}/></button><button className="edit-button" onClick={() => void deleteItem(item.id)} aria-label={`Șterge ${item.name}`}><X size={16}/></button></>}</div>)}</div><div className="quick-actions"><button onClick={() => { setAddMode(addMode === "bulk" ? null : "bulk"); setShowAdd(false); }}><Plus size={17}/> Adăugare în masă</button><button onClick={() => { setAddMode(addMode === "voice" ? null : "voice"); setShowAdd(false); }}><Mic size={17}/> Adăugare vocală</button><button className="primary-button bulk-purchase-button" disabled={busy || selectedItemIds.length === 0} onClick={() => void bulkMarkPurchased()}><Check size={16}/> Cumpărat</button></div>
+      {activeList && <><div className="list-heading list-heading-lower"><div><h2>{activeList.name}</h2><p>{remaining} produse de cumpărat</p></div><div className="row-actions"><button className="icon-button" aria-label="Redenumește lista" onClick={() => void renameList()}><Pencil size={16}/></button><button className="icon-button" aria-label="Arhivează lista" onClick={() => void archiveList()}><Trash2 size={17}/></button></div></div><section className="summary-grid compact"><article className="summary-card"><span>Produse rămase</span><strong>{remaining}</strong></article><article className="summary-card budget-card"><span>Buget estimat</span><strong>{money(total)}</strong><small>{unpriced} fără preț</small></article></section><div className="bulk-toolbar"><span>{selectedItemIds.length} selectate · {activeItems.length} de cumpărat</span><div className="bulk-toolbar-actions"><select aria-label="Filtrează după magazin" value={storeFilter} onChange={e => setStoreFilter(e.target.value)}><option value="all">Toate magazinele</option><option value="none">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><button className="secondary-button" onClick={() => setGroupByStore(value => !value)}>{groupByStore ? "Listă simplă" : "Grupează după magazin"}</button><select aria-label="Magazin pentru produsele selectate" value={bulkStoreId} onChange={e => setBulkStoreId(e.target.value)}><option value="">Fără magazin</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select><button className="primary-button add-single-product" onClick={() => { setShowAdd(value => !value); setAddMode(null); }}><Plus size={17}/> Adaugă produs</button><button className="secondary-button" disabled={busy || selectedItemIds.length === 0} onClick={() => void bulkAssignStore()}>Aplică magazinul</button></div></div><div className="product-list">{activeItems.length ? renderItemRows(activeItems) : <p className="empty-hint">Nu există produse de cumpărat pentru filtrul ales.</p>}</div>{purchasedItems.length > 0 && <section className="purchased-history"><button className="purchased-history-toggle" aria-expanded={showPurchasedHistory} onClick={() => setShowPurchasedHistory(value => !value)}><span>Istoric cumpărături ({purchasedItems.length})</span><span>{showPurchasedHistory ? "Ascunde" : "Afișează"}</span></button>{showPurchasedHistory && <div className="product-list">{renderItemRows(purchasedItems)}</div>}</section>}<div className="quick-actions"><button onClick={() => { setAddMode(addMode === "bulk" ? null : "bulk"); setShowAdd(false); }}><Plus size={17}/> Adăugare în masă</button><button onClick={() => { setAddMode(addMode === "voice" ? null : "voice"); setShowAdd(false); }}><Mic size={17}/> Adăugare vocală</button><button className="primary-button bulk-purchase-button" disabled={busy || selectedItemIds.length === 0} onClick={() => void bulkMarkPurchased()}><Check size={16}/> Cumpărat</button></div>
       {addMode && <section className="bulk-panel"><div className="list-heading"><div><h2>{addMode === "voice" ? "Adăugare vocală" : "Adăugare în masă"}</h2><p>{addMode === "voice" ? "Vorbește în română sau editează transcrierea." : "Un produs pe rând sau separate prin virgulă."}</p></div><button className="icon-button" onClick={() => { recognition?.stop(); setListening(false); setAddMode(null); }} aria-label="Închide"><X size={17}/></button></div>
       {addMode === "voice" && <button className="primary-button voice-button" onClick={() => listening ? recognition?.stop() : startVoice()}><Mic size={17}/>{listening ? "Oprește dictarea" : "Începe dictarea"}</button>}
       <textarea rows={4} placeholder={"Lapte, Pâine, Banane"} value={bulkText} onChange={e => setBulkText(e.target.value)}/>
