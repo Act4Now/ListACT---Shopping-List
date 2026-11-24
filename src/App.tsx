@@ -260,12 +260,6 @@ export default function App() {
     if (error) { setMessage(error.message); return; }
     setNewName(""); setNewQty("1"); setNewUnit("buc"); setShowAdd(false); await loadItems();
   }
-  async function togglePurchased(item: Item) {
-    if (!supabase) return;
-    const next = !item.is_purchased;
-    const { error } = await supabase.from("shopping_items").update({ is_purchased: next, purchased_at: next ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).eq("id", item.id);
-    if (error) setMessage(error.message); else await loadItems();
-  }
   function startEdit(item: Item) {
     setEditing(item.id);
     setDraft({ quantity: String(item.quantity), unit: item.unit, price: item.unit_price === null ? "" : String(item.unit_price), store_id: item.store_id ?? "" });
