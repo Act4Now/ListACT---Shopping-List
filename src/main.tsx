@@ -6,3 +6,8 @@ import "./index.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode><App /></React.StrictMode>,
 );
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/ListACT---Shopping-List/sw.js").catch(error => console.error("ListACT service worker registration failed:", error));
+  });
+}
