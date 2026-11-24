@@ -79,3 +79,6 @@
 .purchased-history-toggle span:last-child{color:#27804b;font-size:calc(var(--font-scale, 1) * 11px)}
 .product-row.is-bought{background:#f7faf7}
 @media(max-width:600px){.product-store-label{font-size:calc(var(--font-scale, 1) * 9px)}.selection-spacer{width:22px;flex-basis:22px}.restore-button{width:24px;height:26px;flex-basis:24px}}
+
+.price-reference{display:flex;align-items:center;flex-wrap:wrap;gap:5px;color:#28724f;font-size:calc(var(--font-scale, 1) * 10px);line-height:1.4;margin-top:3px}
+.price-reference .text-button{padding:0 3px;color:#1c6c48;font-size:inherit;font-weight:800;text-decoration:underline}
